@@ -1,0 +1,35 @@
+# Compiled Object files
+*.slo
+*.lo
+*.o
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+
+# Local-only files
+**/__*/*
+*.*-*
+*.!*
+
+# diff files
+*.diff
+
+# Windows programs
+*.exe
+
+# Default binary program suffix for linux linker outputs
+*.out
+
+# text files
+*.txt*
+
+# archives
+*.zip
+*.tar
+*.gz
