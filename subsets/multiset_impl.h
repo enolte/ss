@@ -116,7 +116,7 @@ namespace ss
 
         return counts;
       }
-
+/*
       // TODO 6:58 PM Sunday, October 12, 2025.
       constexpr auto& prev(auto& mm, std::size_t L)
       {
@@ -141,8 +141,8 @@ namespace ss
             return mm;
           }
         }
-
       }
+*/
     }
   }
 }

@@ -1,9 +1,7 @@
 #include <iostream>
 #include <cassert>
 
-#define SS std::cout << __func__ << ", " << __LINE__ << ". "
-
-#include "../utils/binomial.h"
+#include "binomial.h"
 
 #include "../subsets/multiset.h"
 

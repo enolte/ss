@@ -8,25 +8,18 @@ namespace ss
 {
   namespace multi
   {
-    // TODO 7:49 PM Sunday, October 12, 2025.
     // Sentinel types for construction and ordering comparison below
     static constexpr struct {} begin{};
     static constexpr struct {} end{};
     static constexpr struct {} rbegin{};
     static constexpr struct {} rend{};
 
-
-
-
-
-
-
     template<std::uint64_t N>
     struct index
     {
       std::uint64_t L;
 
-      // N+1 bits in each `bits`. For all but the 0th, use only the first N bits.
+      // N+1 bits in each `bits`. For all but the 0th, only the first N bits are used.
       std::array<bits<N>, L> counts;
 
       index(const auto state, std::uint64_t L): L{L}

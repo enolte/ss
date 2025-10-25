@@ -4,11 +4,11 @@ C++20 / 23 hobby project.
 
 Mono-repo: *No submodules*
 
-I've used these for sundry projects over some years. I've re-written them here to the C++23 standard,
+I've used these algorithms for sundry projects over time. I've re-written them here to the C++23 standard,
 and with full generality of scope.
 
 This repo includes a collection of generative algorithms for operations on subsets of $\mathcal{P}(X)$,
-the power set of a set $X$. These included iteration, accumulation, and multi-selection. I may add others later.
+the power set of a set $X$. These include subset iteration, summation, and multi-selection. I may add others later.
 
 The underlying set is an abstraction, modeled as $X = \left\\{0,\\; ...,\\; N-1\right\\}$.
 In practice, $X$ itself is usually an external index into some other data structure, so there is no loss
@@ -17,6 +17,19 @@ of generality here.
 Power sets are inherently extremely large (in the sense that they grow very quickly), so some discussion of
 execution speed and memory consumption is also included. (Commentary for these topics in this document is
 in progress.)
+
+## Status
+
+(_7:57 PM Friday, October 24, 2025_)
+
+Work in progress. I have working versions of each implementation described below, but I'm in progress with updating the newer,
+faster ones for multiindices, and also with completing the general case of subset summation. Until then, they won't be included in this repo.
+
+* Fixed-size subset iteration: Random-access iteration is pending. Otherwise complete.
+* Multi-set iteration: offset-based impl is complete (not included in this repo yet), bit-packed implementation is in progress
+* Subset summation: working for positive sets, in progress for the general case. Needs minor unit test improvements for the positive-set case.
+
+
 
 ## Unit tests
 
@@ -41,8 +54,7 @@ lexicographically ordered.
 If the chain graph of $\mathcal{P}(X)$ is traversed with a breadth-first search starting from either $\emptyset$
 or from $X$, this traversal iterates the sets at a given BFS level.
 
-For $n = \lvert X \rvert = 6$, with $k = 3$, there are 20 subsets to iterate. The bitwise index impl looks
-like this (zeroes omitted):
+For $n = \lvert X \rvert = 6$ and $k = 3$, the full bitwise subset iteration looks like this (zeroes omitted):
 
 |   | 0 | 1 | 2 | 3 | 4 | 5 |
 |:-:|:-:|:-:|:-:|:-:|:-:|:-:|
@@ -201,11 +213,11 @@ E.g., with N = 4 and L = 3, the entire sequence is this (zeroes omitted):
 |19 |   |   |   | 3 |
 
 
-The implementation is a dense `std::array` of counts, literally as described here.
+The current implementation is a dense `std::array` of counts, literally as described here.
 
-A replacement impl is pending, using a bit-packed multiindex components. This will be performance tested
-with the std::array of countsk with results updated here.
-
+A replacement impl is pending, using bit-packed multiindex components, to reduce cache reloads.
+This will be performance tested with the `std::array` of counts. When that is complete, both impls
+and results for them will added to this repo.
 
 
 ### Bidirectional iteration
@@ -214,7 +226,7 @@ Bidirectional iteration is pending.
 
 ### Random access
 
-Random access is supported. TODO 7:05 PM Friday, October 10, 2025.
+Random access is supported. Documentation pending.
 
 
 

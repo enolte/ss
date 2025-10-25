@@ -8,8 +8,7 @@ namespace ss
   namespace utils
   {
     // Binomial coefficients
-    // constexpr std::uint64_t C(std::uint64_t n, std::uint64_t k)
-    constexpr std::size_t C(std::size_t n, std::size_t k)
+    constexpr std::uint64_t C(std::uint64_t n, std::uint64_t k)
     {
       if(k > n)
         return 0;
