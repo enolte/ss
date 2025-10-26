@@ -1,13 +1,15 @@
-#include "../subsets/bits.h"
-
 #include <iostream>
 #include <cassert>
+
+#include "../subsets/bits.h"
 
 void test_bits_array_size();
 void test_bits_mask_1();
 void test_bits_segment_mask();
 void test_bits_tail_ones();
 void test_bits_set1();
+void test_bits_set_value();
+void test_bits_get_value();
 
 void test_bits()
 {
@@ -18,6 +20,135 @@ void test_bits()
   test_bits_segment_mask();
   test_bits_tail_ones();
   test_bits_set1();
+  test_bits_set_value();
+  test_bits_get_value();
+}
+
+void test_bits_get_value()
+{
+  std::cout << std::format("  {}", __func__) << std::endl;
+
+  using namespace ss;
+  using namespace ss::impl::arrays;
+
+  {
+    auto W = 2; // width of bit field to read
+    ss::bits<7> bits{};
+    assert(get_value(bits, 0, W) == 0);
+    assert(get_value(bits, 1, W) == 0);
+    assert(get_value(bits, 2, W) == 0);
+    assert(get_value(bits, 3, W) == 0);
+
+    bits[0] = 5 << 1;                     // 0001010
+    assert(get_value(bits, 0, W) == 2);   //      10
+    assert(get_value(bits, 1, W) == 1);   //     01
+    assert(get_value(bits, 2, W) == 2);   //    10
+    assert(get_value(bits, 3, W) == 1);   //   01
+    assert(get_value(bits, 4, W) == 0);   //  00
+
+    bits[0] = (5 << 1) | 1;               // 0001011
+    assert(get_value(bits, 0, W) == 3);   //      11
+    assert(get_value(bits, 1, W) == 1);   //     01
+    assert(get_value(bits, 2, W) == 2);   //    10
+    assert(get_value(bits, 3, W) == 1);   //   01
+    assert(get_value(bits, 4, W) == 0);   //  00
+//SS; ss::impl::to_ostream(std::cout, bits, 7) << std::endl;
+  }
+
+  {
+    auto W = 9;
+    ss::bits<70> bits{};
+    assert(get_value(bits,  0, W) == 0);
+    assert(get_value(bits,  1, W) == 0);
+    assert(get_value(bits, 51, W) == 0);
+    assert(get_value(bits, 53, W) == 0);
+    assert(get_value(bits, 60, W) == 0);
+    assert(get_value(bits, 61, W) == 0);
+
+    bits[0] = (7ull << 61) | (7ull << 47);
+    bits[1] = 7 << 1;
+/*
+  bits is now:
+   ...0 00001110 11100000 00000011 10000000 0...
+   ...7 77666666 66665555 55555544 44444444 3
+   ...2 10987654 32109876 54321098 76543210 6...
+          │       │ │     ├─│──────┤
+          │       │ │     j+W      j=47
+          │       │ │      0000011 1
+          │       │ │       │
+          │       ├─│───────┤
+          │       j+W       j=53
+          │        100000 000
+          │         │
+          ├─────────┤
+                    j=60
+           01110 1110
+*/
+SS; ss::impl::to_ostream(std::cout, bits, 70) << std::endl;
+    assert(get_value(bits,  0, W) == 0);
+    assert(get_value(bits,  1, W) == 0);
+    assert(get_value(bits, 42, W) == 7 << 5);
+    assert(get_value(bits, 45, W) == 7 << 2);
+    assert(get_value(bits, 46, W) == 7 << 1);
+    assert(get_value(bits, 47, W) == 7);
+    assert(get_value(bits, 48, W) == 3);
+    assert(get_value(bits, 49, W) == 1);
+    assert(get_value(bits, 50, W) == 0);
+SS << get_value(bits, 53, W) << std::endl;
+    assert(get_value(bits, 53, W) == 1 << 8);
+    assert(get_value(bits, 60, W) == 0b011101110);
+    assert(get_value(bits, 61, W) == 0b001110111);
+
+  }
+}
+
+
+void test_bits_set_value()
+{
+  std::cout << std::format("  {}", __func__) << std::endl;
+
+  using namespace ss;
+  using namespace ss::impl::arrays;
+
+  {
+    auto W = 2; // width of bit field to write
+
+    ss::bits<7> bits{};
+    assert(bits[0] == 0b000'0000);
+
+    set_value(bits, 2, W, 0); assert(bits[0] == 0b000'0000);
+    set_value(bits, 2, W, 1); assert(bits[0] == 0b000'0100);
+    bits = {};
+    set_value(bits, 2, W, 2); assert(bits[0] == 0b000'1000);
+    bits = {};
+    set_value(bits, 2, W, 3); assert(bits[0] == 0b000'1100);
+
+    bits = {};
+    set_value(bits, 4, W, 3); assert(bits[0] == 0b011'0000);
+    set_value(bits, 0, W, 3); assert(bits[0] == 0b011'0011);
+    bits = {};
+    set_value(bits, 5, W, 3); assert(bits[0] == 0b110'0000);
+
+    W = 3;
+    bits = {};
+    set_value(bits, 3, W, 3); assert(bits[0] == 0b001'1000);
+    set_value(bits, 3, W, 5); assert(bits[0] == 0b010'1000);
+
+  }
+
+  {
+    auto W = 10;
+    bits<100> bits{};
+
+    set_value(bits, 5 , W, 36); assert(bits[0] == 0b100100'00000);
+    set_value(bits, 5 , W, 37); assert(bits[0] == 0b100101'00000);
+    set_value(bits, 60, W,  1); assert(bits[0] == 0b0001'00000'00000'00000'00000'00000'00000'00000'00000'00000'00001'00101'00000);
+
+    set_value(bits, 60, W, 127);
+    assert(bits[0] == 0b1111'00000'00000'00000'00000'00000'00000'00000'00000'00000'00001'00101'00000);
+    assert(bits[1] == 0b111);
+  }
+
 }
 
 void test_bits_set1()

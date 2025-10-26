@@ -1,120 +1,115 @@
 #include "bits.h"
-
+#include "../test/array_ostream.h"
 namespace ss
 {
   namespace multi
   {
     namespace impl
     {
-      constexpr void begin(auto& counts, std::uint64_t L)
+      inline std::uint64_t W(std::size_t L) { return std::bit_width(L); }
+
+      constexpr void begin(auto& bits, std::uint64_t L)
       {
-        for(auto l{0zu}; l != L; ++l)
-        {
-          ss::impl::arrays::zero(counts[l]);
-          counts[l][0] = 1;
-        }
+        ss::impl::arrays::zero(bits);
+        ss::impl::arrays::set_value(bits, 0, W(L), L);
       }
 
-      constexpr void end(auto& counts, std::uint64_t L, std::uint64_t N)
+      constexpr void end(auto& bits, std::uint64_t L, std::uint64_t N)
       {
-        for(auto l{0zu}; l != L; ++l)
-        {
-          ss::impl::arrays::zero(counts[l]);
-          ss::impl::arrays::set1(counts[l], N-1, N);
-        }
-        // ss::impl::arrays::set1(counts[0], N, N+1);
-        counts[0][N >> 6] |= 1ull << (N & 63);
+        ss::impl::arrays::zero(bits);
+        ss::impl::arrays::set1(bits, L*W(L) - L, L*W(L)+1);
       }
 
-      constexpr void rbegin(auto& counts, std::uint64_t L, std::uint64_t N)
+      // TODO 7:05 PM Tuesday, October 28, 2025. Test.
+      constexpr void rbegin(auto& bits, std::uint64_t L, std::uint64_t N)
       {
-        for(auto l{0zu}; l != L; ++l)
-        {
-          ss::impl::arrays::zero(counts[l]);
-          ss::impl::arrays::set1(counts[l], N-1, N);
-        }
+        ss::impl::arrays::zero(bits);
+        ss::impl::arrays::set1(bits, L*W(L) - L, L*W(L));
       }
 
-      constexpr void rend(auto& counts, std::uint64_t L, std::uint64_t N)
+      // TODO 7:05 PM Tuesday, October 28, 2025. Test.
+      constexpr void rend(auto& bits, std::uint64_t L, std::uint64_t N)
       {
-        for(auto l{0zu}; l != L; ++l)
-        {
-          ss::impl::arrays::zero(counts[l]);
-          counts[l][0] = 1;
-        }
-        // ss::impl::arrays::set1(counts[0], N, N+1);
-        counts[0][N >> 6] |= 1ull << (N & 63);
+        ss::impl::arrays::zero(bits);
+        ss::impl::arrays::set1(bits, 0, W(L));
+        ss::impl::arrays::set1(bits, W(L), W(L)+1);
       }
 
-      constexpr bool is_begin(const auto& counts, std::size_t L)
+      constexpr bool is_begin(const auto& bits, std::size_t L)
       {
-        for(auto l{0}; l < L; ++l)
-        {
-          if(counts[l][0] != 1)
-            return false;
-
-          for(auto i{1}; i != std::size(counts[0]); ++i)
-            if(counts[l][i] != 0)
-              return false;
-        }
-
-        return true;
+        return
+          ss::impl::arrays::test(bits, W(L)) == 0 &&
+          ss::impl::arrays::get_value(bits, 0, W(L)) == L;
       }
 
       // TODO 7:56 PM Sunday, October 12, 2025.
 /*
-      constexpr bool is_rbegin(const auto& counts, std::size_t L)
+      constexpr bool is_rbegin(const auto& bits, std::size_t L)
       {
         return
           counts.back() == L
           &&
           std::ranges::all_of(counts.cbegin(), counts.cend()-2, [](auto& m){ return m == 0; });
       }
-
-      constexpr bool is_end(const auto& counts)
+*/
+      constexpr bool is_end(const auto& bits, std::size_t L, std::uint64_t N)
       {
-        return counts.back() == 1;
+        return
+          ss::impl::arrays::test(bits, W(L)*N) != 0 &&
+          ss::impl::arrays::get_value(bits, W(L)*(N - 1), W(L)) == L;
       }
-
-      constexpr bool is_rend(const auto& counts)
+/*
+      constexpr bool is_rend(const auto& bits)
       {
         return counts.back() == 1;
       }
 */
-      constexpr auto& next(auto& counts, std::size_t L)
+      // sum of values in segments of `bits` of with width W, for segment offset i in [n, N).
+      constexpr std::uint64_t sum(auto& bits, std::size_t W, std::size_t n, std::size_t N)
       {
-        constexpr auto L = std::size(counts);
+        std::uint64_t acc{};
+        for(auto j{n}; j < N; ++j)
+          acc += ss::impl::arrays::get_value(bits, j*W, W);
+        return acc;
+      }
 
-        // Find a non-zero memory unit at lowest echelon.
+      inline auto& next(auto& bits, std::size_t L, std::size_t N)
+      {
+        const auto W{impl::W(L)};
+
         auto i{0zu};
-        for(; i < std::size(counts[0]); ++i)
-          if(counts[0][i] != 0)
-            break;
+        for(; i < N-1; ++i)
+        {
+          const auto component_i = ss::impl::arrays::get_value(bits, i*W, W);
+          if(component_i > 0)
+          {
+            ss::impl::arrays::set_value(bits, i*W, W, component_i-1);
 
-        // Find the bit offset, j, in counts[0] where the first 1 occurs.
-        // This is the first component we're about to change.
-        const auto j = 64*i + std::countl_zero(counts[0][i]);
+            const auto component_ip1 = ss::impl::arrays::get_value(bits, i*W+W, W);
+            ss::impl::arrays::set_value(bits, i*W+W, W, component_ip1+1);
 
-        // Get the highest echelon at offset j which is a one.
-        auto l{L-1};
-        for(; l != 0; --l)
-          if(ss::impl::arrays::test(counts[l], j))
-            break;
+            ss::impl::arrays::set0(bits, 0, i*W+W);
+            ss::impl::arrays::set_value(bits, 0, W, L - sum(bits, W, i+1, N));
 
-        // Get the highest echelon at offset j+1 which is a one.
-        auto e1{L-1};
-        for(; e1 != 0; --e1)
-          if(ss::impl::arrays::test(counts[e1], j+1))
-            break;
+            return bits;
+          }
+        }
 
-        if(e1 != 0 || ss::impl::arrays::test(counts[0], j+1))
-          ++e1;
-
-        // Toggle 2 bits
-        ss::impl::arrays::set0(counts[e], j, j+1);
-        ss::impl::arrays::set1(counts[e1], j+1, j+2);
-
-        return counts;
+        // We're in either `last` state or `end` state @entry
+        // If `last`, transition to `end`.
+        // If `end`, transition to `begin`.
+        // if(bits.back() == 0)
+        if(!ss::impl::arrays::test(bits, W*N))
+        {
+          ss::impl::arrays::set1(bits, W*N, W*N+1);
+          return bits;
+        }
+        else
+        {
+          ss::impl::arrays::zero(bits);
+          ss::impl::arrays::set_value(bits, 0, W, L);
+          return bits;
+        }
       }
 /*
       // TODO 6:58 PM Sunday, October 12, 2025.

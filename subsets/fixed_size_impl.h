@@ -53,6 +53,7 @@ namespace ss
             if(j == N-1 && test(bits, j))
               break;
 
+            // Find the first transition ..01.. if it exists.
             std::uint64_t m{};
             for(; m < 63 && j != N-1; ++m, ++j)
             {
@@ -127,6 +128,7 @@ namespace ss
             if(j == K-1 && test(bits, j))
               break;
 
+            // Find the first transition ..10.. if it exists.
             std::uint64_t m{};
             for(; m < 63 && j != N-1; ++m, ++j)
             {

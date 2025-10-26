@@ -1,5 +1,6 @@
 #pragma once
 
+#include <bit>
 
 #include "bits.h"
 #include "multiset_impl.h"
@@ -14,15 +15,19 @@ namespace ss
     static constexpr struct {} rbegin{};
     static constexpr struct {} rend{};
 
-    template<std::uint64_t N>
+    /*
+     * A multi-index type for a set {0, ..., N-1}.
+     */
+    template<std::uint64_t N, std::uint64_t L>
     struct index
     {
-      std::uint64_t L;
+      // bit width of a single entry in `bits`
+      static constexpr std::uint64_t W{ std::bit_width(L) };
 
-      // N+1 bits in each `bits`. For all but the 0th, only the first N bits are used.
-      std::array<bits<N>, L> counts;
+      // Bit-packed consecutive storage for each multiindex component.
+      ss::bits<N*W> bits{};
 
-      index(const auto state, std::uint64_t L): L{L}
+      constexpr index(const auto state)
       {
         if constexpr(std::same_as<decltype(state), decltype(begin)>)
           impl::begin(bits, L);
@@ -39,40 +44,49 @@ namespace ss
 
       index& operator=(decltype(begin))
       {
-        begin(counts, K);
+        impl::begin(bits, L);
         return *this;
       }
 
       index& operator=(decltype(end))
       {
-        end(counts, K, N);
+        impl::end(bits, L, N);
         return *this;
       }
 
       index& operator=(decltype(rbegin))
       {
-        rbegin(counts, K, N);
+        impl::rbegin(bits, L, N);
         return *this;
       }
 
       index& operator=(decltype(rend))
       {
-        rend(counts, K, N);
+        impl::rend(bits, L, N);
         return *this;
+      }
+
+      constexpr std::array<std::uint64_t, N> components() const
+      {
+        std::array<std::uint64_t, N> c;
+        for(auto j{0zu}; j != N; ++j)
+        {
+          c[j] = ss::impl::arrays::get_value(bits, j*W, W);
+        }
+        return c;
       }
     };
 
 
     template<typename ostream, std::uint64_t N, std::uint64_t L>
-    ostream& operator<<(ostream& o, const index<K, L>& mm)
+    ostream& operator<<(ostream& o, const index<N, L>& mm)
     {
-      o << "[\n";
-      if(mm.counts[0].size() > 0)
-      {
-        for(auto l{0zu}; l < L; ++l)
-          o << mm.counts[l] << '\n';
-      }
-      o << "\n]" << st::flush;
+      o << "(N * W(L)) = (" << N << " * W(" << L << ")) = (" << N << " * " << std::bit_width(L) << ") ";
+      o << "[";
+      ss::impl::to_ostream(o, mm.bits, N * mm.W - 1);
+      o << "]" << std::flush;
+      if(ss::impl::arrays::test(mm.bits, mm.W*N))
+        o << " (end)" << std::flush;
       return o;
     }
 

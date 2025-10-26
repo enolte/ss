@@ -44,6 +44,7 @@ Unit tests cover fixed-size iteration, multiindex iteration, and subset summatio
 
 ## Fixed-size subset iteration
 
+
 This enumerates every subset of $X$ of some chosen size $K$, $0 \le K \le N = \vert{X\vert}$.
 There are $\binom{N}{K}$ many such subsets. $N > 0$ is arbitrary, subject to storage constraints.
 
@@ -80,6 +81,77 @@ For $n = \lvert X \rvert = 6$ and $k = 3$, the full bitwise subset iteration loo
 |19 |   |   |   | 1 | 1 | 1 |
 
 
+### Example usage
+
+The above sequence of 20 subsets is produced by the following program. (N.B. op<< serializes MSB to LSB, so the
+output is the left-to-right reverse of the above table.)
+
+```c++
+/*
+  Compiled with
+
+    g++ --std=c++23 -I. examples/00/example.cpp
+
+  from the ss repo root.
+ */
+
+#include "subsets/fixed_size.h"
+#include <iostream>
+
+int main()
+{
+  int count{};
+
+  using namespace ss::fixed_size;
+
+  // Write to stdout every 3-subset of a 6-set.
+  for(subset<6> subset{begin, 3}; subset != end; ++subset)
+  {
+    std::cout << count << " " << subset << std::endl;
+    ++count;
+  }
+
+  return 0;
+}
+```
+
+This code is in [examples/fixed-size-all-subsets/example.cpp](examples/fixed-size-all-subsets/example.cpp)
+
+The following program code prints the first 10 subsets of $(N, K) = (89, 65)$ to stdout.
+
+```c++
+/*
+  Compiled with
+
+    g++ --std=c++23 -I. examples/00/example.cpp
+
+  from the ss repo root.
+ */
+
+#include "subsets/fixed_size.h"
+#include <iostream>
+
+int main()
+{
+  int count{};
+
+  // Select subsets of size 65 from a set of 89 points.
+  for(ss::fixed_size::subset<89> subset{ss::fixed_size::begin, 65}; subset != ss::fixed_size::end; ++subset)
+  {
+    std::cout << subset << std::endl;
+
+    if(++count == 10)
+      break;
+  }
+
+  return 0;
+}
+
+```
+
+This code is in [examples/00/example.cpp](examples/00/example.cpp)
+
+
 
 ### Bidirectional iteration
 
@@ -91,29 +163,15 @@ so-called sentinels.
 
 Sentinal singletons are provided, as `ss::end`, `ss::begin`, etc, to support optimized comparisons such as `susbet == end`.
 
-The state transitions among `rend`, `begin`, `rbegin`, and `end` follow a natural pattern.
+The state transitions among `rend`, `begin`, `rbegin`, and `end` are very simple, and follow a natural pattern.
 
-```
-             forward ──►
-
-                 rend ───────┐
-          ┌─────► end ─────┐ │
-          │                │ │
-          │                ▼ ▼
-       rbegin             begin
-        ▲ ▲                │
-        │ │                │
-        │ └───── rend ◄────┘
-        └───────  end
-
-            ◄── backward
-```
+![docs/cyclic-iteration.png](docs/cyclic-iteration.png)
 
 So for forward iteration: `rbegin --> end --> begin` and `rend --> begin`.
 
 For backward iteration: `rbegin <-- rend <-- begin` and `rbegin <-- end`.
 
-`end` (`rend`) is entered only by forward (backward) iteration.
+The intent is that `end` (`rend`) is entered only by forward (backward) iteration.
 
 
 ### Random Access Iteration
@@ -130,23 +188,26 @@ subset types in this repo. That are completed for fixed-size subsets. When I hav
 for multi-sets and upload the results.
 
 On my host, the following tables are a brief sample of results for fixed-size subsets described below.
+* After the N and K columns, the next column in each table is the fastest absolute (`(abs)`) execution time
+for forward or backward iteration.
+* The columns thereafter are exec times relative to those two columns.
 
-After the N and K columns, the next column in each table is the fastest
-absolute (`(abs)`) execution time for forward or backward iteration. Times in these columns are for
-*on-frame access only*. Accessing an subset off-frame incurs a penalty of ~4ns on my host system.
-The columns thereafter are exec times relative to those two columns.
+Note: Times in the `(abs)` column are for static allocation with *on-frame access only*.
+Accessing a subset off-frame incurs a penalty of ~4ns on my host system.
 
-For the source imple compared here:
-* `ss::index` is a `std::vector<std::uint64_t>`, sparse offset index into the underlying set.
+Source impls compared here:
+* `ss::index`: a `std::vector<std::uint64_t>`, sparse offset index into the underlying set.
 This is the previous impl I used for these utilites.
-* `ss::bits` is a `std::array<std::uint64_t>`, bit-packed and dense. This is the new impl.
+* `ss::bits`: a `std::array<std::uint64_t>`, bit-packed and dense. This is the new impl.
 
-Table units are `[ns / subset]`. Data collected over a minimum of 10,000,000 iterations for each
+Data collected over a minimum of 10,000,000 iterations for each
 value.
+
+Table units are `[ns / subset]`.
 
 Forward iteration:
 
-|  N   |  K  |ss::bits(abs)  |  ss::index (rel)  |std::bitset (rel)  |
+|  N   |  K  |ss::bits (abs) |  ss::index (rel)  |std::bitset (rel)  |
 |:----:|:---:|--------------:|------------------:|------------------:|
 |  502 | 200 |     0.3350    |        93.4468    |      1325.8696    |
 |  848 | 318 |     0.3344    |       165.9450    |      2210.8060    |
@@ -157,7 +218,7 @@ Forward iteration:
 
 Backward iteration:
 
-|  N   |  K  |ss::bits(abs)  |  ss::index (rel)  |std::bitset (rel)  |
+|  N   |  K  |ss::bits (abs) |  ss::index (rel)  |std::bitset (rel)  |
 |:----:|:---:|--------------:|------------------:|------------------:|
 |  502 | 200 |     0.3350    |        93.4305    |      1474.8884    |
 |  848 | 318 |     0.3352    |       165.5847    |      2611.1661    |
@@ -168,21 +229,23 @@ Backward iteration:
 
 Notes:
 
-1. `ss::index` is ~10.4 x faster than `std::bitset`, even though `ss::index` dynamically allocates,
-where `std::bitset` does not. That is, `std::bitset` is quite slow.
+1. `std::bitset` is slow. `ss::index` is ~10.4 x faster than `std::bitset`, even though `ss::index`
+dynamically allocates, where `std::bitset` does not.
 
 2. `ss::bits` execution period is essentially constant up to an array length
 of 139 (implied max $N$ = 8895). This is due to iterating `ss::bits` on-frame.
 
 3. `ss::bits` execution period is ~336 picoseconds / subset, with std dev = ~10 ps / subset / row (average).
-These numbers are on my host, which are obviously not expected to be reproducible on another host, but the absolute
-times should give an estimate of what to expect if this is run elsewhere.
+These exec times are only on my host, so obviously reproducible on another host, but
+should give an estimate of what to expect.
 
 
 ## Fixed-length multi-set iteration
 
-For a given a set $X$, a (dense) multiindex is just an ordered sequence $\left\\{m_0, ..., m_{N-1}\right\\}$,
-where each $m_i \ge 0$ is the number of occurrences of the ith point in $X$.
+Updated impl is in progress.
+
+For a given a set $X$, a (dense) multiindex is just an ordered sequence of counts $\left\\{m_0, ..., m_{N-1}\right\\}$,
+where each $m_i \ge 0$ is the number of occurrences of the $i^{th}$ point in $X$.
 
 Generating all multiindices of a fixed length $L = \sum m_i$ is done in a natural order.
 There are $\binom{N + L - 1}{L}$ many such multiindices.

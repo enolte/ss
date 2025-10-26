@@ -176,46 +176,9 @@ namespace ss
       else
         static_assert(false, "unknown state comparison type");
     }
-/*
-    template<std::uint64_t N>
-    constexpr bool operator<(const auto state, const subset<N>& s)
-    {
-      if constexpr(std::same_as<decltype(state), decltype(begin)>)
-        return s != begin && s != rend;
-      else if constexpr(std::same_as<decltype(state), decltype(end)>)
-        return false;
-      else if constexpr(std::same_as<decltype(state), decltype(rbegin)>)
-        return s == end;
-      else if constexpr(std::same_as<decltype(state), decltype(rend)>)
-        return s != rend;
-      else
-        static_assert(false, "unknown state comparison type");
-    }
 
-    template<std::uint64_t N>
-    constexpr bool operator<=(const auto state, const subset<N>& s) { return state < s || state == s; }
-
-    template<std::uint64_t N>
-    constexpr bool operator>(const auto state, const subset<N>& s) { return !(state <= s); }
-
-    template<std::uint64_t N>
-    constexpr bool operator>=(const auto state, const subset<N>& s) { return !(state < s); }
-
-    template<std::uint64_t N>
-    constexpr bool operator<=(const subset<N>& s, const auto state) { return state >= s; }
-
-    template<std::uint64_t N>
-    constexpr bool operator>(const subset<N>& s, const auto state) { return state < s; }
-
-    template<std::uint64_t N>
-    constexpr bool operator>=(const subset<N>& s, const auto state) { return state <= s; }
-
-    template<std::uint64_t N>
-    constexpr bool operator<(const subset<N>& s, const auto state) { return state > s; }
-*/
-
-    template<std::uint64_t N>
-    inline std::ostream& operator<<(std::ostream& o, const subset<N>& s)
+    template<typename ostream, std::uint64_t N>
+    inline ostream& operator<<(ostream& o, const subset<N>& s)
     {
       return ss::impl::to_ostream(o, s.bits, N);
     }
