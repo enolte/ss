@@ -9,24 +9,26 @@
 template<std::uint64_t N, std::uint64_t L>
 void test_multiset_components();
 
-void test_multiset_N5_L3();
-// TODO 6:41 PM Tuesday, October 28, 2025.
-// void test_multiset_N10_L3();
-
 template<std::uint64_t N, std::uint64_t L>
 void test_multiset();
 
 void test_multiset()
 {
+
   std::cout << "────── " << __func__ << " ─────────────────────────────────────────\n";
 
   test_multiset_components<3, 5>();
   test_multiset_components<4, 5>();
   test_multiset_components<5, 3>();
 
-  test_multiset_N5_L3();
-  // test_multiset_N10_L3();
+  test_multiset<2, 2>();
+  test_multiset<4, 2>();
+  test_multiset<2, 4>();
+  test_multiset<3, 5>();
+  test_multiset<5, 3>();
   test_multiset<5, 8>();
+  test_multiset<6, 10>();
+  test_multiset<10, 6>();
   test_multiset<10, 13>();
   test_multiset<13, 10>();
   test_multiset<20, 4>();
@@ -36,6 +38,7 @@ void test_multiset()
   test_multiset<5, 44>();
   test_multiset<44, 5>();
 }
+
 
 // Basic component conversion from bit sequence
 template<std::uint64_t N, std::uint64_t L>
@@ -61,20 +64,58 @@ void test_multiset()
 
   using namespace ss::multi;
 
-  // Multiindex on an N-point set
-  index<N, L> mm{begin};
+  constexpr bool write_to_stdout = ss::utils::C(N + L - 1, L) < 40;
 
-  std::cout << "    Counting: (expect " << ss::utils::C(N + L - 1, L) << ") " << std::flush;
+  // Multiindex of length L on an N-point set
+  index<N, L> mm{begin};
+  if constexpr(write_to_stdout)
+    std::cout << "    Counting forward: (expect " << ss::utils::C(N + L - 1, L) << ") " << std::endl;
+  else
+    std::cout << "    Counting forward: (expect " << ss::utils::C(N + L - 1, L) << ") " << std::flush;
+
+// SS << mm << "  " << mm.components() << std::endl;
   std::uint64_t nsubsets{};
   while(!impl::is_end(mm.bits, L, N))
   {
+    if constexpr(write_to_stdout)
+    {
+      std::cout << mm << "  " << mm.components() << std::endl;
+    }
+
     impl::next(mm.bits, L, N);
     ++nsubsets;
   }
   std::cout << "nsubsets = "     << nsubsets << std::endl;
   assert(nsubsets == ss::utils::C(N + L - 1, L));
+
+  if constexpr(write_to_stdout)
+    std::cout << "    Counting backward: (expect " << ss::utils::C(N + L - 1, L) << ") " << std::endl;
+  else
+    std::cout << "    Counting backward: (expect " << ss::utils::C(N + L - 1, L) << ") " << std::flush;
+
+  nsubsets = {};
+  mm = rbegin;
+// SS << mm << "  " << mm.components() << std::endl;
+  while(!impl::is_rend(mm.bits, L, N))
+  {
+    if constexpr(write_to_stdout)
+    {
+      std::cout << mm << "  " << mm.components() << std::endl;
+    }
+
+    impl::prev(mm.bits, L, N);
+    ++nsubsets;
+
+    // Sanity check during initial dev.
+    if(nsubsets == ss::utils::C(N + L - 1, L)+2)
+      break;
+  }
+  std::cout << "nsubsets = "     << nsubsets << std::endl;
+  assert(nsubsets == ss::utils::C(N + L - 1, L));
 }
 
+
+#if 0
 void test_multiset_N5_L3()
 {
   std::cout << std::format("  {}", __func__) << std::endl;
@@ -131,11 +172,10 @@ void test_multiset_N5_L3()
 
   // Expect transition into `begin` state.
   impl::next(mm.bits, L, N); std::cout << mm << "  " << mm.components() << std::endl; assert((mm.components() == components{3, 0, 0, 0, 0}));
-SS << "(mm.bits.size() = " << mm.bits.size() << ") " << mm.bits.back() << std::endl;
-  assert(impl::is_begin(mm.bits, L));
+  assert(impl::is_begin(mm.bits, L, N));
   assert(!impl::is_end(mm.bits, L, N));
 
-  std::cout << "    Counting: (expect " << ss::utils::C(N + L - 1, L) << ") " << std::flush;
+  std::cout << "    Count forward: (expect " << ss::utils::C(N + L - 1, L) << ") " << std::flush;
   mm = begin;
   int nsubsets{};
   while(!impl::is_end(mm.bits, L, N))
@@ -145,10 +185,77 @@ SS << "(mm.bits.size() = " << mm.bits.size() << ") " << mm.bits.back() << std::e
   }
   std::cout << "nsubsets = "     << nsubsets << std::endl;
   assert(nsubsets == ss::utils::C(N + L - 1, L));
+
+
+
+  // Expect 35 multiindices, in this order:
+  mm = rbegin;               std::cout << mm << "  " << mm.components() << std::endl; assert((mm.components() == components{0, 0, 0, 0, 3}));
+  impl::prev(mm.bits, L, N); std::cout << mm << "  " << mm.components() << std::endl; assert((mm.components() == components{0, 0, 0, 1, 2}));
+  impl::prev(mm.bits, L, N); std::cout << mm << "  " << mm.components() << std::endl; assert((mm.components() == components{0, 0, 1, 0, 2}));
+  impl::prev(mm.bits, L, N); std::cout << mm << "  " << mm.components() << std::endl; assert((mm.components() == components{0, 1, 0, 0, 2}));
+  impl::prev(mm.bits, L, N); std::cout << mm << "  " << mm.components() << std::endl; assert((mm.components() == components{1, 0, 0, 0, 2}));
+  impl::prev(mm.bits, L, N); std::cout << mm << "  " << mm.components() << std::endl; assert((mm.components() == components{0, 0, 0, 2, 1}));
+  impl::prev(mm.bits, L, N); std::cout << mm << "  " << mm.components() << std::endl; assert((mm.components() == components{0, 0, 1, 1, 1}));
+  impl::prev(mm.bits, L, N); std::cout << mm << "  " << mm.components() << std::endl; assert((mm.components() == components{0, 1, 0, 1, 1}));
+  impl::prev(mm.bits, L, N); std::cout << mm << "  " << mm.components() << std::endl; assert((mm.components() == components{1, 0, 0, 1, 1}));
+  impl::prev(mm.bits, L, N); std::cout << mm << "  " << mm.components() << std::endl; assert((mm.components() == components{0, 0, 2, 0, 1}));
+  impl::prev(mm.bits, L, N); std::cout << mm << "  " << mm.components() << std::endl; assert((mm.components() == components{0, 1, 1, 0, 1}));
+  impl::prev(mm.bits, L, N); std::cout << mm << "  " << mm.components() << std::endl; assert((mm.components() == components{1, 0, 1, 0, 1}));
+  impl::prev(mm.bits, L, N); std::cout << mm << "  " << mm.components() << std::endl; assert((mm.components() == components{0, 2, 0, 0, 1}));
+  impl::prev(mm.bits, L, N); std::cout << mm << "  " << mm.components() << std::endl; assert((mm.components() == components{1, 1, 0, 0, 1}));
+  impl::prev(mm.bits, L, N); std::cout << mm << "  " << mm.components() << std::endl; assert((mm.components() == components{2, 0, 0, 0, 1}));
+  impl::prev(mm.bits, L, N); std::cout << mm << "  " << mm.components() << std::endl; assert((mm.components() == components{0, 0, 0, 3, 0}));
+  impl::prev(mm.bits, L, N); std::cout << mm << "  " << mm.components() << std::endl; assert((mm.components() == components{0, 0, 1, 2, 0}));
+  impl::prev(mm.bits, L, N); std::cout << mm << "  " << mm.components() << std::endl; assert((mm.components() == components{0, 1, 0, 2, 0}));
+  impl::prev(mm.bits, L, N); std::cout << mm << "  " << mm.components() << std::endl; assert((mm.components() == components{1, 0, 0, 2, 0}));
+  impl::prev(mm.bits, L, N); std::cout << mm << "  " << mm.components() << std::endl; assert((mm.components() == components{0, 0, 2, 1, 0}));
+  impl::prev(mm.bits, L, N); std::cout << mm << "  " << mm.components() << std::endl; assert((mm.components() == components{0, 1, 1, 1, 0}));
+  impl::prev(mm.bits, L, N); std::cout << mm << "  " << mm.components() << std::endl; assert((mm.components() == components{1, 0, 1, 1, 0}));
+  impl::prev(mm.bits, L, N); std::cout << mm << "  " << mm.components() << std::endl; assert((mm.components() == components{0, 2, 0, 1, 0}));
+  impl::prev(mm.bits, L, N); std::cout << mm << "  " << mm.components() << std::endl; assert((mm.components() == components{1, 1, 0, 1, 0}));
+  impl::prev(mm.bits, L, N); std::cout << mm << "  " << mm.components() << std::endl; assert((mm.components() == components{2, 0, 0, 1, 0}));
+  impl::prev(mm.bits, L, N); std::cout << mm << "  " << mm.components() << std::endl; assert((mm.components() == components{0, 0, 3, 0, 0}));
+  impl::prev(mm.bits, L, N); std::cout << mm << "  " << mm.components() << std::endl; assert((mm.components() == components{0, 1, 2, 0, 0}));
+  impl::prev(mm.bits, L, N); std::cout << mm << "  " << mm.components() << std::endl; assert((mm.components() == components{1, 0, 2, 0, 0}));
+  impl::prev(mm.bits, L, N); std::cout << mm << "  " << mm.components() << std::endl; assert((mm.components() == components{0, 2, 1, 0, 0}));
+  impl::prev(mm.bits, L, N); std::cout << mm << "  " << mm.components() << std::endl; assert((mm.components() == components{1, 1, 1, 0, 0}));
+  impl::prev(mm.bits, L, N); std::cout << mm << "  " << mm.components() << std::endl; assert((mm.components() == components{2, 0, 1, 0, 0}));
+  impl::prev(mm.bits, L, N); std::cout << mm << "  " << mm.components() << std::endl; assert((mm.components() == components{0, 3, 0, 0, 0}));
+  impl::prev(mm.bits, L, N); std::cout << mm << "  " << mm.components() << std::endl; assert((mm.components() == components{1, 2, 0, 0, 0}));
+  impl::prev(mm.bits, L, N); std::cout << mm << "  " << mm.components() << std::endl; assert((mm.components() == components{2, 1, 0, 0, 0}));
+  impl::prev(mm.bits, L, N); std::cout << mm << "  " << mm.components() << std::endl; assert((mm.components() == components{3, 0, 0, 0, 0}));
+
+
+  // Expect transition into `rend` state.
+  assert(!impl::is_rend(mm.bits, L, N));
+  impl::prev(mm.bits, L, N); std::cout << mm << "  " << mm.components() << std::endl; assert((mm.components() == components{3, 0, 0, 0, 0}));
+  assert(!impl::is_rbegin(mm.bits, L, N));
+  assert(impl::is_rend(mm.bits, L, N));
+
+  // Expect transition into `rbegin` state.
+  impl::prev(mm.bits, L, N); std::cout << mm << "  " << mm.components() << std::endl; assert((mm.components() == components{0, 0, 0, 0, 3}));
+  assert(impl::is_rbegin(mm.bits, L, N));
+  assert(!impl::is_rend(mm.bits, L, N));
+
+  std::cout << "    Count backward: (expect " << ss::utils::C(N + L - 1, L) << ") " << std::flush;
+  mm = rbegin;
+  nsubsets = 0;
+  while(!impl::is_rend(mm.bits, L, N))
+  {
+    impl::prev(mm.bits, L, N);
+    ++nsubsets;
+
+    // Sanity check during initial dev.
+    if(nsubsets == 35+2)
+      break;
+  }
+  std::cout << "nsubsets = "     << nsubsets << std::endl;
+  assert(nsubsets == ss::utils::C(N + L - 1, L));
+
 }
 
 
-#if 0
+
 void test_multiset_N10_L3()
 {
   std::cout << std::format("  {}", __func__) << std::endl;
