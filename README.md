@@ -4,26 +4,41 @@ C++20 / 23 hobby project.
 
 Mono-repo: *No submodules*
 
-I've used these algorithms for sundry projects over time. I've re-written them here to the C++23 standard,
-and with full generality of scope.
-
 This repo includes a collection of generative algorithms for operations on subsets of $\mathcal{P}(X)$,
-the power set of a set $X$. These include subset iteration, summation, and multi-selection. I may add others later.
+the power set of a set $X$. I've used these algorithms for sundry projects over time. I've re-written them here to the C++23 standard, and with full generality of scope.
 
-The underlying set is an abstraction, modeled as $X = \left\\{0,\\; ...,\\; N-1\right\\}$.
-In practice, $X$ itself is usually an external index into some other data structure, so there is no loss
-of generality here.
+## Scope
 
-Power sets are inherently extremely large (in the sense that they grow very quickly), so some discussion of
-execution speed and memory consumption is also included. (Commentary for these topics in this document is
-in progress.)
+This repo implementes 3 kinds of algorithms.
+
+* Fixed-size subset iteration
+* Multi-set iteration
+* Subset sum accumulation
+
+Each of these does what it sounds like it does. I might add others later.
+
+For each of these, there is a legacy impl originally written for historical reasons. Time complexity asymptotics are mentioned below.
+
+This repo replaces those impls with memory-efficient bitwise versions with equivalent functionality.
+
+As of today (Saturday, November 01, 2025), only the new bitwise impls are uploaded here. When the updated impls are complete and performance comparisons tests are at least minimally complete, the older impls will be uploaded here for comparison. Power sets are inherently extremely large (in the sense that they grow very quickly), so some discussion of execution speed and memory consumption is also to be included. Commentary for these topics in this document is also in progress.
+
+The underlying set is modeled as the usual abstraction, $X = \left\\{0,\\; ...,\\; N-1\right\\}$. In other words, an integer is a set. In practice, $X$ itself is usually an external index into some other data structure, so there is no loss of generality here.
+
 
 ## Status
 
+(_6:39 PM Friday, October 31, 2025_)
+
+Progress with multi-set iteration.
+
+* Fixed-size subset iteration: bit-packed impl random-access is pending. Otherwise complete.
+* Multi-set iteration: bit-packed impl now does bidirectional iteration. Random-access is pending.
+* Subset summation: working for positive sets, in progress for the general case. Needs minor unit test improvements for the positive-set case.
+
 (_7:57 PM Friday, October 24, 2025_)
 
-Work in progress. I have working versions of each implementation described below, but I'm in progress with updating the newer,
-faster ones for multiindices, and also with completing the general case of subset summation. Until then, they won't be included in this repo.
+Work in progress. I have working versions of each implementation described below, but I'm in progress with updating the newer, faster ones for multiindices, and also with completing the general case of subset summation. Until then, they won't be included in this repo.
 
 * Fixed-size subset iteration: Random-access iteration is pending. Otherwise complete.
 * Multi-set iteration: offset-based impl is complete (not included in this repo yet), bit-packed implementation is in progress
@@ -44,9 +59,10 @@ Unit tests cover fixed-size iteration, multiindex iteration, and subset summatio
 
 ## Fixed-size subset iteration
 
-
 This enumerates every subset of $X$ of some chosen size $K$, $0 \le K \le N = \vert{X\vert}$.
 There are $\binom{N}{K}$ many such subsets. $N > 0$ is arbitrary, subject to storage constraints.
+
+Iterating the full power set in not necessary. Both the older impl and the new one iterate  _directly_ from a set of size K to a next set of size K.
 
 Iteration is over every integer < $2^N$ with exactly $K$ many one bits in its binary representation,
 in numerically increasing order. With the LSB == rightmost bit, the resulting bit sequences are also
@@ -157,13 +173,13 @@ This code is in [examples/00/example.cpp](examples/00/example.cpp)
 
 Bidirectional iteration is supported.
 
-For the `ss::subset` type, it is circular. `end` are `rend` are distinct states, with distinct implementations.
-They are non-terminal, and a `subset` in either state is valid for "read" purposes. I.e., `end` and `rend` are not
+For the `ss::subset` type, it is circular. `end` are `rend` are distinct states, with distinct implementations. They are non-terminal, and a `subset` in either state is valid for "read" purposes. I.e., `end` and `rend` are not
 so-called sentinels.
 
 Sentinal singletons are provided, as `ss::end`, `ss::begin`, etc, to support optimized comparisons such as `susbet == end`.
 
 The state transitions among `rend`, `begin`, `rbegin`, and `end` are very simple, and follow a natural pattern.
+The intent is that `end` (`rend`) is entered only by forward (backward) iteration.
 
 ![docs/cyclic-iteration.png](docs/cyclic-iteration.png)
 
@@ -171,7 +187,7 @@ So for forward iteration: `rbegin --> end --> begin` and `rend --> begin`.
 
 For backward iteration: `rbegin <-- rend <-- begin` and `rbegin <-- end`.
 
-The intent is that `end` (`rend`) is entered only by forward (backward) iteration.
+
 
 
 ### Random Access Iteration
@@ -236,13 +252,14 @@ dynamically allocates, where `std::bitset` does not.
 of 139 (implied max $N$ = 8895). This is due to iterating `ss::bits` on-frame.
 
 3. `ss::bits` execution period is ~336 picoseconds / subset, with std dev = ~10 ps / subset / row (average).
-These exec times are only on my host, so obviously reproducible on another host, but
+These exec times are only on my host, so obviously not reproducible on another host, but
 should give an estimate of what to expect.
 
 
 ## Fixed-length multi-set iteration
 
 Updated impl is in progress.
+
 
 For a given a set $X$, a (dense) multiindex is just an ordered sequence of counts $\left\\{m_0, ..., m_{N-1}\right\\}$,
 where each $m_i \ge 0$ is the number of occurrences of the $i^{th}$ point in $X$.
@@ -276,16 +293,14 @@ E.g., with N = 4 and L = 3, the entire sequence is this (zeroes omitted):
 |19 |   |   |   | 3 |
 
 
-The current implementation is a dense `std::array` of counts, literally as described here.
+The legacy implementation (not included here yet) is a dense `std::array` of counts, literally as described here.
 
-A replacement impl is pending, using bit-packed multiindex components, to reduce cache reloads.
-This will be performance tested with the `std::array` of counts. When that is complete, both impls
-and results for them will added to this repo.
+The replacement impl uses bit-packed integers, to reduce cache reloads. This will be performance tested with the `std::array` of counts. When that is complete, both impls and results for them will added to this repo.
 
 
 ### Bidirectional iteration
 
-Bidirectional iteration is pending.
+Bidirectional iteration is supported, with the same circular semantics as described for fixed-size subset iteration.
 
 ### Random access
 

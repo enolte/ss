@@ -6,7 +6,7 @@ namespace ss
   {
     namespace impl
     {
-      inline std::uint64_t W(std::size_t L) { return std::bit_width(L); }
+      constexpr std::uint64_t W(std::size_t L) { return std::bit_width(L); }
 
       constexpr void begin(auto& bits, std::uint64_t L)
       {
@@ -17,70 +17,62 @@ namespace ss
       constexpr void end(auto& bits, std::uint64_t L, std::uint64_t N)
       {
         ss::impl::arrays::zero(bits);
-        ss::impl::arrays::set1(bits, L*W(L) - L, L*W(L)+1);
+        ss::impl::arrays::set_value(bits, (N-1)*W(L), W(L), L);
+        ss::impl::arrays::set1(bits, N*W(L), N*W(L)+1);
       }
 
-      // TODO 7:05 PM Tuesday, October 28, 2025. Test.
       constexpr void rbegin(auto& bits, std::uint64_t L, std::uint64_t N)
       {
         ss::impl::arrays::zero(bits);
-        ss::impl::arrays::set1(bits, L*W(L) - L, L*W(L));
+        ss::impl::arrays::set_value(bits, (N-1)*W(L), W(L), L);
       }
 
-      // TODO 7:05 PM Tuesday, October 28, 2025. Test.
       constexpr void rend(auto& bits, std::uint64_t L, std::uint64_t N)
       {
         ss::impl::arrays::zero(bits);
-        ss::impl::arrays::set1(bits, 0, W(L));
-        ss::impl::arrays::set1(bits, W(L), W(L)+1);
+        ss::impl::arrays::set_value(bits, 0, W(L), L);
+        ss::impl::arrays::set1(bits, N*W(L), N*W(L)+1);
       }
 
-      constexpr bool is_begin(const auto& bits, std::size_t L)
+      constexpr bool is_begin(const auto& bits, std::size_t L, std::uint64_t N)
       {
         return
-          ss::impl::arrays::test(bits, W(L)) == 0 &&
+          ss::impl::arrays::test(bits, W(L)*N) == 0 &&
           ss::impl::arrays::get_value(bits, 0, W(L)) == L;
       }
 
-      // TODO 7:56 PM Sunday, October 12, 2025.
-/*
-      constexpr bool is_rbegin(const auto& bits, std::size_t L)
+      constexpr bool is_rbegin(const auto& bits, std::size_t L, std::uint64_t N)
       {
         return
-          counts.back() == L
-          &&
-          std::ranges::all_of(counts.cbegin(), counts.cend()-2, [](auto& m){ return m == 0; });
+          ss::impl::arrays::test(bits, W(L)*N) == 0 &&
+          ss::impl::arrays::get_value(bits, W(L)*(N - 1), W(L)) == L;
       }
-*/
+
       constexpr bool is_end(const auto& bits, std::size_t L, std::uint64_t N)
       {
         return
           ss::impl::arrays::test(bits, W(L)*N) != 0 &&
           ss::impl::arrays::get_value(bits, W(L)*(N - 1), W(L)) == L;
       }
-/*
-      constexpr bool is_rend(const auto& bits)
+
+      // TODO 9:36 PM Thursday, October 30, 2025. Test
+      constexpr bool is_rend(const auto& bits, std::size_t L, std::uint64_t N)
       {
-        return counts.back() == 1;
-      }
-*/
-      // sum of values in segments of `bits` of with width W, for segment offset i in [n, N).
-      constexpr std::uint64_t sum(auto& bits, std::size_t W, std::size_t n, std::size_t N)
-      {
-        std::uint64_t acc{};
-        for(auto j{n}; j < N; ++j)
-          acc += ss::impl::arrays::get_value(bits, j*W, W);
-        return acc;
+        return
+          ss::impl::arrays::test(bits, W(L)*N) != 0 &&
+          ss::impl::arrays::get_value(bits, 0, W(L)) == L;
       }
 
-      inline auto& next(auto& bits, std::size_t L, std::size_t N)
+      constexpr auto& next(auto& bits, std::size_t L, std::size_t N)
       {
         const auto W{impl::W(L)};
+        std::uint64_t initial_count{};
 
         auto i{0zu};
         for(; i < N-1; ++i)
         {
           const auto component_i = ss::impl::arrays::get_value(bits, i*W, W);
+          initial_count += component_i;
           if(component_i > 0)
           {
             ss::impl::arrays::set_value(bits, i*W, W, component_i-1);
@@ -89,7 +81,7 @@ namespace ss
             ss::impl::arrays::set_value(bits, i*W+W, W, component_ip1+1);
 
             ss::impl::arrays::set0(bits, 0, i*W+W);
-            ss::impl::arrays::set_value(bits, 0, W, L - sum(bits, W, i+1, N));
+            ss::impl::arrays::set_value(bits, 0, W, initial_count - 1);
 
             return bits;
           }
@@ -98,7 +90,6 @@ namespace ss
         // We're in either `last` state or `end` state @entry
         // If `last`, transition to `end`.
         // If `end`, transition to `begin`.
-        // if(bits.back() == 0)
         if(!ss::impl::arrays::test(bits, W*N))
         {
           ss::impl::arrays::set1(bits, W*N, W*N+1);
@@ -111,33 +102,63 @@ namespace ss
           return bits;
         }
       }
-/*
-      // TODO 6:58 PM Sunday, October 12, 2025.
-      constexpr auto& prev(auto& mm, std::size_t L)
+
+      constexpr auto& prev(auto& bits, std::size_t L, std::size_t N)
       {
-        if(mm[0] > 0)
-        {
-          mm[0]--;
-        }
+        const auto W{impl::W(L)};
 
-        auto i{0};
-        for(; i != std::size(mm) - 2; ++i)
+        std::uint64_t initial_count{};
+        const auto component_0 = ss::impl::arrays::get_value(bits, 0, W);
+        if(component_0 > 0)
         {
-          if(mm[i] > 0)
+          initial_count += component_0;
+
+          // Find the next non-zero component if there is one.
+          for(auto i{1zu}; i < N; ++i)
           {
-            mm[i]--;
-
-            auto j{i+1};
-            for(; j < std::size(mm) - 2 && mm[j] != 0; ++j);
-
-            mm[j-1] = L;
-            std::fill_n(std::begin(mm), i+1, 0);
-            mm[std::size(mm) - 2] = L - std::accumulate(std::cbegin(mm), std::cbegin(mm) + i, 0);
-            return mm;
+            const auto component_i = ss::impl::arrays::get_value(bits, i*W, W);
+            if(component_i > 0)
+            {
+              initial_count += component_i;
+              ss::impl::arrays::set_value(bits, i*W, W, component_i-1);
+              ss::impl::arrays::set0(bits, 0, i*W);
+              ss::impl::arrays::set_value(bits, i*W-W, W, initial_count-(component_i-1));
+              return bits;
+            }
           }
+
+          // No next non-zero. We're in either `begin` or `rend` at entry.
+          if(ss::impl::arrays::test(bits, N*W) == 0)
+          {
+            // `begin` --> `rend`
+            ss::impl::arrays::set1(bits, N*W, N*W+1);
+          }
+          else
+          {
+            // `rend` --> `rbegin`
+            rbegin(bits, L, N);
+          }
+
+          return bits;
         }
+
+
+        auto i{1zu};
+        for(; i < N; ++i)
+        {
+          const auto component_i = ss::impl::arrays::get_value(bits, i*W, W);
+          if(component_i > 0)
+          {
+            ss::impl::arrays::set_value(bits, i*W, W, component_i-1);
+            const auto component_im1 = ss::impl::arrays::get_value(bits, i*W-W, W);
+            ss::impl::arrays::set_value(bits, i*W-W, W, component_im1+1);
+            break;
+          }
+
+        }
+
+        return bits;
       }
-*/
     }
   }
 }
