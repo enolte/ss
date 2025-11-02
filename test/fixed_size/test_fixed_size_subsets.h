@@ -7,6 +7,10 @@ void test_fixed_size_subsets_construct();
 void test_fixed_size_subsets_ordering();
 void test_fixed_size_subsets_states();
 void test_fixed_size_subsets_state_transitions();
+void test_fixed_size_subsets_random_access_N5_K3();
+void test_fixed_size_subsets_random_access_N7_K4();
+
+template<std::uint64_t N, std::uint64_t K>
 void test_fixed_size_subsets_random_access();
 
 void test_fixed_size_subsets()
@@ -18,24 +22,191 @@ void test_fixed_size_subsets()
   test_fixed_size_subsets_state_transitions();
   test_fixed_size_subsets_states();
 
-  test_fixed_size_subsets_random_access();
+  test_fixed_size_subsets_random_access_N5_K3();
+  test_fixed_size_subsets_random_access_N7_K4();
+  test_fixed_size_subsets_random_access<5, 3>();
+  test_fixed_size_subsets_random_access<7, 4>();
+  test_fixed_size_subsets_random_access<17, 7>();
+  test_fixed_size_subsets_random_access<25, 15>();
+  // test_fixed_size_subsets_random_access<33, 14>();
 }
 
-// TODO 8:25 AM Thursday, October 09, 2025
+/*
+ * For given m, find the maximum value of K such that
+ *
+ *   C(N, K) <= m
+ */
+// TODO 2:43 PM Wednesday, November 05, 2025.
+constexpr max_K(std::uint64_t N, std::uint64_t m = (1ull << 63) - 1)
+{
+  std::uint64_t C{1};
+  for(std::uint64_t k{}; k <= N/2; ++k)
+  {
+    if(C > m)
+      return k-1;
+
+    C *= N-k;
+    C /= k+1;
+  }
+
+  return N/2;
+}
+
+/*
+ * return: true iff C(N, k) <= m for every k = 0, ..., N/2
+ */
+constexpr bool is_bounded(std::uint64_t N, std::uint64_t m = (1ull << 63) - 1)
+{
+  return max_K(N, m) == N/2;
+}
+
+template<std::uint64_t N, std::uint64_t K>
 void test_fixed_size_subsets_random_access()
+{
+  std::cout << std::format("  {}<{}, {}>", __func__, N, K) << std::endl;
+
+  using namespace ss::fixed_size;
+
+  auto s = subset<N>::template choose<K>(begin);
+  auto t = s;
+
+  std::uint64_t count{1};
+  s.get(1);
+  t = s;
+  while(s != rbegin)
+  {
+    ++count;
+    ++t;
+    s.get(count);
+
+    if(t != s)
+      std::cout << "[" << count << "] t = " << t << '\n'
+                << "     s = " << s << std::endl;
+
+    assert(t == s);
+  }
+
+  s.get(++count);
+  assert(s == begin);
+
+  std::cout << "count = " << count << std::endl;
+
+  if(is_bounded(N))
+    assert(count == ss::utils::C(N,K));
+  else
+    std::cout << "C(" << N << ", " << K << ") >= 2**64" << std::endl;
+}
+
+void test_fixed_size_subsets_random_access_N5_K3()
 {
   std::cout << std::format("  {}", __func__) << std::endl;
 
   using namespace ss::fixed_size;
 
-  subset<7> s{begin, 4};
+  // C(5, 3) = 10
+  subset<5> s{begin, 3};
 
+  int count{};
   while(s != end)
   {
-SS << s << std::endl;
+    std::cout << "[" << (count < 10 ? " " : "") << count << "] " << s << std::endl;
+    ++count;
     ++s;
   }
+
+  assert(count == 10);
+
+  s.get( 0); assert(s.bits[0] == 0b000111);
+  s.get( 1); assert(s.bits[0] == 0b001011);
+  s.get( 2); assert(s.bits[0] == 0b001101);
+  s.get( 3); assert(s.bits[0] == 0b001110);
+  s.get( 4); assert(s.bits[0] == 0b010011);
+  s.get( 5); assert(s.bits[0] == 0b010101);
+  s.get( 6); assert(s.bits[0] == 0b010110);
+  s.get( 7); assert(s.bits[0] == 0b011001);
+  s.get( 8); assert(s.bits[0] == 0b011010);
+  s.get( 9); assert(s.bits[0] == 0b011100); // = rbegin
+  s.get(10); assert(s.bits[0] == 0b000111); // Expect return to `begin` state
+  s.get(11); assert(s.bits[0] == 0b001011);
+  s.get(12); assert(s.bits[0] == 0b001101);
+  s.get(13); assert(s.bits[0] == 0b001110);
+  s.get(14); assert(s.bits[0] == 0b010011);
+  s.get(15); assert(s.bits[0] == 0b010101);
+  s.get(16); assert(s.bits[0] == 0b010110);
+  s.get(17); assert(s.bits[0] == 0b011001);
+  s.get(18); assert(s.bits[0] == 0b011010);
+  s.get(19); assert(s.bits[0] == 0b011100); // = rbegin
+  s.get(20); assert(s.bits[0] == 0b000111); // Expect return to `begin` state
 }
+
+void test_fixed_size_subsets_random_access_N7_K4()
+{
+  std::cout << std::format("  {}", __func__) << std::endl;
+
+  using namespace ss::fixed_size;
+
+  // C(7, 4) = 35
+  subset<7> s{begin, 4};
+
+  int count{};
+  while(s != end)
+  {
+    std::cout << "[" << (count < 10 ? " " : "") << count << "] " << s << std::endl;
+    ++count;
+    ++s;
+  }
+
+  assert(count == 35);
+
+  s.get(0);   assert(s.bits[0] == 0b00001111);
+  s.get(1);   assert(s.bits[0] == 0b00010111);
+  s.get(2);   assert(s.bits[0] == 0b00011011);
+  s.get(3);   assert(s.bits[0] == 0b00011101);
+  s.get(4);   assert(s.bits[0] == 0b00011110);
+  s.get(5);   assert(s.bits[0] == 0b00100111);
+  s.get(6);   assert(s.bits[0] == 0b00101011);
+  s.get(7);   assert(s.bits[0] == 0b00101101);
+  s.get(8);   assert(s.bits[0] == 0b00101110);
+  s.get(9);   assert(s.bits[0] == 0b00110011);
+  int i = 9;
+  s.get(++i); assert(s.bits[0] == 0b00110101);
+  s.get(++i); assert(s.bits[0] == 0b00110110);
+  s.get(++i); assert(s.bits[0] == 0b00111001);
+  s.get(++i); assert(s.bits[0] == 0b00111010);
+  s.get(++i); assert(s.bits[0] == 0b00111100);
+  s.get(++i); assert(s.bits[0] == 0b01000111);
+  s.get(++i); assert(s.bits[0] == 0b01001011);
+  s.get(++i); assert(s.bits[0] == 0b01001101);
+  s.get(++i); assert(s.bits[0] == 0b01001110);
+  s.get(++i); assert(s.bits[0] == 0b01010011);
+  s.get(++i); assert(s.bits[0] == 0b01010101);
+  s.get(++i); assert(s.bits[0] == 0b01010110);
+  s.get(++i); assert(s.bits[0] == 0b01011001);
+  s.get(++i); assert(s.bits[0] == 0b01011010);
+  s.get(++i); assert(s.bits[0] == 0b01011100);
+  s.get(++i); assert(s.bits[0] == 0b01100011);
+  s.get(++i); assert(s.bits[0] == 0b01100101);
+  s.get(++i); assert(s.bits[0] == 0b01100110);
+  s.get(++i); assert(s.bits[0] == 0b01101001);
+  s.get(++i); assert(s.bits[0] == 0b01101010);
+  s.get(++i); assert(s.bits[0] == 0b01101100);
+  s.get(++i); assert(s.bits[0] == 0b01110001);
+  s.get(++i); assert(s.bits[0] == 0b01110010);
+  s.get(++i); assert(s.bits[0] == 0b01110100);
+  s.get(++i); assert(s.bits[0] == 0b01111000); // = `rbegin`
+  assert(i == 34);
+  s.get(++i); assert(s.bits[0] == 0b00001111); // Expect transition `rbegin` --> `begin`
+  assert(i == 35);
+
+  s.get(69); assert(s.bits[0] == 0b01111000); // = `rbegin`
+  s.get(70); assert(s.bits[0] == 0b00001111); // Expect transition `rbegin` --> `begin`
+  // {
+    // std::array<int, 3> offsets{};
+    // s.components(offsets.begin());
+// SS << s << "  " << offsets << std::endl;
+  // }
+}
+
 
 // TODO 3:56 PM Saturday, October 04, 2025 This could be more thorough.
 void test_fixed_size_subsets_states()
@@ -194,8 +365,6 @@ void test_fixed_size_subsets_state_transitions_forward()
     assert(s == begin);
   }
 }
-
-
 
 void test_fixed_size_subsets_state_transitions_backward()
 {

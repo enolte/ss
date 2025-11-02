@@ -1,7 +1,6 @@
 #include <iostream>
 #include <cassert>
 
-#include "binomial.h"
 #include "array_ostream.h"
 
 #include "../subsets/multiset.h"

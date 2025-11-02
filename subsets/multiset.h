@@ -29,6 +29,7 @@ namespace ss
       // `end` / `rend` state.
       ss::bits<N*W> bits{};
 
+      // N.B. The `const` on this param is necessary here.
       constexpr index(const auto state)
       {
         if constexpr(std::same_as<decltype(state), decltype(begin)>)

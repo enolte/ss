@@ -5,11 +5,12 @@ C++20 / 23 hobby project.
 Mono-repo: *No submodules*
 
 This repo includes a collection of generative algorithms for operations on subsets of $\mathcal{P}(X)$,
-the power set of a set $X$. I've used these algorithms for sundry projects over time. I've re-written them here to the C++23 standard, and with full generality of scope.
+the power set of a set $X$. I've used these algorithms for sundry projects over time. They're re-written
+here to the C++23 standard, optimized for time and memory, and with full generality of scope.
 
 ## Scope
 
-This repo implementes 3 kinds of algorithms.
+This repo implements 3 kinds of algorithms.
 
 * Fixed-size subset iteration
 * Multi-set iteration
@@ -21,12 +22,25 @@ For each of these, there is a legacy impl originally written for historical reas
 
 This repo replaces those impls with memory-efficient bitwise versions with equivalent functionality.
 
-As of today (Saturday, November 01, 2025), only the new bitwise impls are uploaded here. When the updated impls are complete and performance comparisons tests are at least minimally complete, the older impls will be uploaded here for comparison. Power sets are inherently extremely large (in the sense that they grow very quickly), so some discussion of execution speed and memory consumption is also to be included. Commentary for these topics in this document is also in progress.
+As of today (Saturday, November 01, 2025), only the new impls are uploaded here. When the updated impls are complete and performance comparisons tests are at least minimally complete, the older impls will be uploaded here for comparison. Power sets are inherently extremely large (in the sense that they grow very quickly), so some discussion of execution speed and memory consumption is also to be included. Commentary for these topics in this document is also in progress.
 
 The underlying set is modeled as the usual abstraction, $X = \left\\{0,\\; ...,\\; N-1\right\\}$. In other words, an integer is a set. In practice, $X$ itself is usually an external index into some other data structure, so there is no loss of generality here.
 
 
 ## Status
+
+(_2:38 PM Wednesday, November 05, 2025_)
+
+Random-access iteration for fixed-size subsets is now cyclic.
+Still needs improvements, but it works as is.
+
+
+<details>
+<summary><h3>Previous updates</h3></summary>
+
+(_8:01 PM Monday, November 03, 2025_)
+
+Progress with fixed-size random access. With $C:=\binom{N}{K}$, getting the $C^{th}$ set by random access now correctly produces the zeroth set. `fixed_size::subset::get(i)` with $i \gt C$ is still not working, but it's close.
 
 (_6:39 PM Friday, October 31, 2025_)
 
@@ -44,7 +58,7 @@ Work in progress. I have working versions of each implementation described below
 * Multi-set iteration: offset-based impl is complete (not included in this repo yet), bit-packed implementation is in progress
 * Subset summation: working for positive sets, in progress for the general case. Needs minor unit test improvements for the positive-set case.
 
-
+</details>
 
 ## Unit tests
 
@@ -62,14 +76,14 @@ Unit tests cover fixed-size iteration, multiindex iteration, and subset summatio
 This enumerates every subset of $X$ of some chosen size $K$, $0 \le K \le N = \vert{X\vert}$.
 There are $\binom{N}{K}$ many such subsets. $N > 0$ is arbitrary, subject to storage constraints.
 
-Iterating the full power set in not necessary. Both the older impl and the new one iterate  _directly_ from a set of size K to a next set of size K.
-
 Iteration is over every integer < $2^N$ with exactly $K$ many one bits in its binary representation,
 in numerically increasing order. With the LSB == rightmost bit, the resulting bit sequences are also
 lexicographically ordered.
 
 If the chain graph of $\mathcal{P}(X)$ is traversed with a breadth-first search starting from either $\emptyset$
 or from $X$, this traversal iterates the sets at a given BFS level.
+
+The naïve implementation of this generates every set in $\Theta(N2^N)$, by iterating the full power set. This is not necessary. Both the older impl this repo replaces, and the new one here, iterate  _directly_ from a set of size K to a next set of size K. Every set is generated in $\Theta(K(N-K)\binom{N}{K})$ time with constant additional stack memory (for counters, about 40 bytes).
 
 For $n = \lvert X \rvert = 6$ and $k = 3$, the full bitwise subset iteration looks like this (zeroes omitted):
 
@@ -192,7 +206,28 @@ For backward iteration: `rbegin <-- rend <-- begin` and `rbegin <-- end`.
 
 ### Random Access Iteration
 
-Random access support is pending.
+Random access support is implemented.
+
+This uses the same cyclic semantics that bidirectional iteration does.
+At the moment, it looks something like this:
+
+```c++
+
+subset<7> s{4, begin};
+// `s` is now the subset {0, 1, 2, 3} = bits sequence 0001111
+
+s.get(13);
+// `s` is now the subset {1, 3, 4, 5} = bits sequence 0111010
+```
+
+A better API for this is pending.
+
+For now, this is constrained by the requirement that $C(N,K) < 2^{64}$. Removing this requirement is in progress.
+
+TODO 2:48 PM Wednesday, November 05, 2025. For now, this is done by resetting to the `begin` state before
+iteration forward. I have a strategy for removing this requirement; there are a couple of implemetations
+that come to mind. When I've selected one, that will proceed.
+
 
 
 ### Performance tests
@@ -295,7 +330,7 @@ E.g., with N = 4 and L = 3, the entire sequence is this (zeroes omitted):
 
 The legacy implementation (not included here yet) is a dense `std::array` of counts, literally as described here.
 
-The replacement impl uses bit-packed integers, to reduce cache reloads. This will be performance tested with the `std::array` of counts. When that is complete, both impls and results for them will added to this repo.
+The replacement impl uses bit-packed integers, to reduce cache reloads. This will be performance tested with the `std::array` of counts. When that is complete, the old impl and comparison results will be added to this repo.
 
 
 ### Bidirectional iteration
