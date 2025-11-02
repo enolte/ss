@@ -7,7 +7,8 @@ void test_fixed_size_subsets_construct();
 void test_fixed_size_subsets_ordering();
 void test_fixed_size_subsets_states();
 void test_fixed_size_subsets_state_transitions();
-void test_fixed_size_subsets_random_access();
+void test_fixed_size_subsets_random_access_N5_K3();
+void test_fixed_size_subsets_random_access_N7_K4();
 
 void test_fixed_size_subsets()
 {
@@ -18,24 +19,130 @@ void test_fixed_size_subsets()
   test_fixed_size_subsets_state_transitions();
   test_fixed_size_subsets_states();
 
-  test_fixed_size_subsets_random_access();
+  test_fixed_size_subsets_random_access_N5_K3();
+  // test_fixed_size_subsets_random_access_N7_K4();
 }
 
-// TODO 8:25 AM Thursday, October 09, 2025
-void test_fixed_size_subsets_random_access()
+void test_fixed_size_subsets_random_access_N5_K3()
 {
   std::cout << std::format("  {}", __func__) << std::endl;
 
   using namespace ss::fixed_size;
 
-  subset<7> s{begin, 4};
 
+  // TODO 3:56 PM Saturday, November 01, 2025. C(7, 4) = 35
+  // C(5, 3) = 10
+  subset<5> s{begin, 3};
+
+  int count{};
   while(s != end)
   {
-SS << s << std::endl;
+    std::cout << "[" << (count < 10 ? " " : "") << count << "] " << s << std::endl;
+    ++count;
     ++s;
   }
+
+  std::array<int, 3> offsets{};
+
+  s.get( 0); assert(s.bits[0] == 0b000111);
+  s.get( 1); assert(s.bits[0] == 0b001011);
+  s.get( 2); assert(s.bits[0] == 0b001101);
+  s.get( 3); assert(s.bits[0] == 0b001110);
+  s.get( 4); assert(s.bits[0] == 0b010011);
+  s.get( 5); assert(s.bits[0] == 0b010101);
+  s.get( 6); assert(s.bits[0] == 0b010110);
+  s.get( 7); assert(s.bits[0] == 0b011001);
+  s.get( 8); assert(s.bits[0] == 0b011010);
+  s.get( 9); assert(s.bits[0] == 0b011100);
+
+  // Expect set 0
+  s.get(10); assert(s.bits[0] == 0b000111);
+
+  // Expect set 1
+  // TODO 8:00 PM Monday, November 03, 2025. Not working yet.
+SS << std::endl;
+  s.get(11); //assert(s.bits[0] == 0b001011);
+  {
+    s.components(offsets.begin());
+SS << s << "  " << offsets << std::endl;
+    // assert((offsets == std::array{3, 4, 5}));
+    // assert(s == end);
+  }
 }
+
+void test_fixed_size_subsets_random_access_N7_K4()
+{
+  std::cout << std::format("  {}", __func__) << std::endl;
+
+  using namespace ss::fixed_size;
+
+
+  // C(7, 4) = 35
+  subset<7> s{begin, 4};
+
+  int count{};
+  while(s != end)
+  {
+    std::cout << "[" << (count < 10 ? " " : "") << count << "] " << s << std::endl;
+    ++count;
+    ++s;
+  }
+
+  std::array<int, 3> offsets{};
+
+  s.get(0);   assert(s.bits[0] == 0b00001111);
+  s.get(1);   assert(s.bits[0] == 0b00010111);
+  s.get(2);   assert(s.bits[0] == 0b00011011);
+  s.get(3);   assert(s.bits[0] == 0b00011101);
+  s.get(4);   assert(s.bits[0] == 0b00011110);
+  s.get(5);   assert(s.bits[0] == 0b00100111);
+  s.get(6);   assert(s.bits[0] == 0b00101011);
+  s.get(7);   assert(s.bits[0] == 0b00101101);
+  s.get(8);   assert(s.bits[0] == 0b00101110);
+  s.get(9);   assert(s.bits[0] == 0b00110011);
+  int i = 9;
+  s.get(++i); assert(s.bits[0] == 0b00110101);
+  s.get(++i); assert(s.bits[0] == 0b00110110);
+  s.get(++i); assert(s.bits[0] == 0b00111001);
+  s.get(++i); assert(s.bits[0] == 0b00111010);
+  s.get(++i); assert(s.bits[0] == 0b00111100);
+  s.get(++i); assert(s.bits[0] == 0b01000111);
+  s.get(++i); assert(s.bits[0] == 0b01001011);
+  s.get(++i); assert(s.bits[0] == 0b01001101);
+  s.get(++i); assert(s.bits[0] == 0b01001110);
+  s.get(++i); assert(s.bits[0] == 0b01010011);
+  s.get(++i); assert(s.bits[0] == 0b01010101);
+  s.get(++i); assert(s.bits[0] == 0b01010110);
+  s.get(++i); assert(s.bits[0] == 0b01011001);
+  s.get(++i); assert(s.bits[0] == 0b01011010);
+  s.get(++i); assert(s.bits[0] == 0b01011100);
+  s.get(++i); assert(s.bits[0] == 0b01100011);
+  s.get(++i); assert(s.bits[0] == 0b01100101);
+  s.get(++i); assert(s.bits[0] == 0b01100110);
+  s.get(++i); assert(s.bits[0] == 0b01101001);
+  s.get(++i); assert(s.bits[0] == 0b01101010);
+  s.get(++i); assert(s.bits[0] == 0b01101100);
+  s.get(++i); assert(s.bits[0] == 0b01110001);
+SS << std::endl;
+  s.get(++i); assert(s.bits[0] == 0b01110010);
+SS << std::endl;
+  s.get(++i); assert(s.bits[0] == 0b01110100);
+SS << std::endl;
+  s.get(++i); assert(s.bits[0] == 0b01111000);
+
+
+  // TODO 10:08 PM Saturday, November 01, 2025. Fix transition into `end` state.
+SS << std::endl;
+SS << s << "  " << offsets << std::endl;
+  s.get(++i); // assert(s.bits[0] == 0b11111000);
+  {
+    s.components(offsets.begin());
+SS << s << "  " << offsets << std::endl;
+    // assert((offsets == std::array{3, 4, 5}));
+    // assert(s == end);
+  }
+}
+
 
 // TODO 3:56 PM Saturday, October 04, 2025 This could be more thorough.
 void test_fixed_size_subsets_states()

@@ -51,72 +51,32 @@ namespace ss
           static_assert(false, "unknown initial state type");
       }
 
-      subset& operator=(decltype(begin))
+      constexpr subset& operator=(decltype(begin))  { impl::begin(bits, K); return *this; }
+      constexpr subset& operator=(decltype(end))    { impl::end(bits, K, N); return *this; }
+      constexpr subset& operator=(decltype(rbegin)) { impl::rbegin(bits, K, N); return *this; }
+      constexpr subset& operator=(decltype(rend))   { impl::rend(bits, K, N); return *this; }
+
+      constexpr bool is_begin() const  { return impl::is_begin(bits, K, N); }
+      constexpr bool is_end() const    { return impl::is_end(bits, K, N); }
+      constexpr bool is_rbegin() const { return impl::is_rbegin(bits, K, N); }
+      constexpr bool is_rend() const   { return impl::is_rend(bits, K, N); }
+
+      constexpr auto components(auto begin) const
       {
-        begin(bits, K);
-        return *this;
+        for(auto j{0zu}; j != N; ++j)
+        {
+          if(ss::impl::arrays::test(bits, j))
+          {
+            *begin = j;
+            ++begin;
+          }
+        }
+        return begin;
       }
 
-      subset& operator=(decltype(end))
-      {
-        end(bits, K, N);
-        return *this;
-      }
-
-      subset& operator=(decltype(rbegin))
-      {
-        rbegin(bits, K, N);
-        return *this;
-      }
-
-      subset& operator=(decltype(rend))
-      {
-        rend(bits, K, N);
-        return *this;
-      }
-
-      constexpr bool is_end() const
-      {
-        return
-          ss::impl::arrays::ones(bits, 0, N-K) == 0 &&
-          ss::impl::arrays::ones(bits, N-K, N) == K &&
-          ss::impl::arrays::test(bits, N);
-      }
-
-      constexpr bool is_begin() const
-      {
-        return
-          ss::impl::arrays::ones(bits, 0, K) == K &&
-          ss::impl::arrays::ones(bits, K, N+1) == 0;
-      }
-
-      constexpr bool is_rbegin() const
-      {
-        return
-          ss::impl::arrays::ones(bits, 0, N-K) == 0 &&
-          ss::impl::arrays::ones(bits, N-K, N) == K &&
-          !ss::impl::arrays::test(bits, N);
-      }
-
-      constexpr bool is_rend() const
-      {
-        return
-          ss::impl::arrays::ones(bits, 0, K) == K &&
-          ss::impl::arrays::ones(bits, K, N) == 0 &&
-          ss::impl::arrays::test(bits, N);
-      }
-
-      subset& next()
-      {
-        impl::next(bits, K, N);
-        return *this;
-      }
-
-      subset& prev()
-      {
-        impl::prev(bits, K, N);
-        return *this;
-      }
+      subset& next() { impl::next(bits, K, N); return *this; }
+      subset& prev() { impl::prev(bits, K, N); return *this; }
+      subset& get(std::uint64_t i) { impl::get(bits, K, N, i); return *this; }
 
       // N.B. `friend` is the only way to declare a non-member function in
       // a class-type scope, and a function template can not be `= default`,

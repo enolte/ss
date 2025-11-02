@@ -9,7 +9,7 @@ the power set of a set $X$. I've used these algorithms for sundry projects over 
 
 ## Scope
 
-This repo implementes 3 kinds of algorithms.
+This repo implements 3 kinds of algorithms.
 
 * Fixed-size subset iteration
 * Multi-set iteration
@@ -27,6 +27,10 @@ The underlying set is modeled as the usual abstraction, $X = \left\\{0,\\; ...,\
 
 
 ## Status
+
+(_8:01 PM Monday, November 03, 2025_)
+
+Progress with fixed-size random access. With $C:=\binom{N}{K}$, getting the $C^{th}$ set by random access now correctly produces the zeroth set. `fixed_size::subset::get(i)` with $i \gt C$ is still not working, but it's close.
 
 (_6:39 PM Friday, October 31, 2025_)
 
@@ -62,14 +66,14 @@ Unit tests cover fixed-size iteration, multiindex iteration, and subset summatio
 This enumerates every subset of $X$ of some chosen size $K$, $0 \le K \le N = \vert{X\vert}$.
 There are $\binom{N}{K}$ many such subsets. $N > 0$ is arbitrary, subject to storage constraints.
 
-Iterating the full power set in not necessary. Both the older impl and the new one iterate  _directly_ from a set of size K to a next set of size K.
-
 Iteration is over every integer < $2^N$ with exactly $K$ many one bits in its binary representation,
 in numerically increasing order. With the LSB == rightmost bit, the resulting bit sequences are also
 lexicographically ordered.
 
 If the chain graph of $\mathcal{P}(X)$ is traversed with a breadth-first search starting from either $\emptyset$
 or from $X$, this traversal iterates the sets at a given BFS level.
+
+The naïve implementation of this generates every set in $\Theta(N2^N)$, by iterating the full power set. This is not necessary. Both the older impl this repo replaces, and the new one here, iterate  _directly_ from a set of size K to a next set of size K. Every set is generated in $\Theta(K(N-K)\binom{N}{K})$ time with constant additional stack memory (for counters, about 40 bytes).
 
 For $n = \lvert X \rvert = 6$ and $k = 3$, the full bitwise subset iteration looks like this (zeroes omitted):
 

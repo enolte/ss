@@ -1,5 +1,5 @@
 #include "bits.h"
-#include "../test/array_ostream.h"
+
 namespace ss
 {
   namespace multi
@@ -141,7 +141,6 @@ namespace ss
 
           return bits;
         }
-
 
         auto i{1zu};
         for(; i < N; ++i)
