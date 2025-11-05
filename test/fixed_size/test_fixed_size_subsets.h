@@ -20,7 +20,7 @@ void test_fixed_size_subsets()
   test_fixed_size_subsets_states();
 
   test_fixed_size_subsets_random_access_N5_K3();
-  // test_fixed_size_subsets_random_access_N7_K4();
+  test_fixed_size_subsets_random_access_N7_K4();
 }
 
 void test_fixed_size_subsets_random_access_N5_K3()
@@ -29,8 +29,6 @@ void test_fixed_size_subsets_random_access_N5_K3()
 
   using namespace ss::fixed_size;
 
-
-  // TODO 3:56 PM Saturday, November 01, 2025. C(7, 4) = 35
   // C(5, 3) = 10
   subset<5> s{begin, 3};
 
@@ -42,7 +40,7 @@ void test_fixed_size_subsets_random_access_N5_K3()
     ++s;
   }
 
-  std::array<int, 3> offsets{};
+  assert(count == 10);
 
   s.get( 0); assert(s.bits[0] == 0b000111);
   s.get( 1); assert(s.bits[0] == 0b001011);
@@ -53,21 +51,18 @@ void test_fixed_size_subsets_random_access_N5_K3()
   s.get( 6); assert(s.bits[0] == 0b010110);
   s.get( 7); assert(s.bits[0] == 0b011001);
   s.get( 8); assert(s.bits[0] == 0b011010);
-  s.get( 9); assert(s.bits[0] == 0b011100);
-
-  // Expect set 0
-  s.get(10); assert(s.bits[0] == 0b000111);
-
-  // Expect set 1
-  // TODO 8:00 PM Monday, November 03, 2025. Not working yet.
-SS << std::endl;
-  s.get(11); //assert(s.bits[0] == 0b001011);
-  {
-    s.components(offsets.begin());
-SS << s << "  " << offsets << std::endl;
-    // assert((offsets == std::array{3, 4, 5}));
-    // assert(s == end);
-  }
+  s.get( 9); assert(s.bits[0] == 0b011100); // = rbegin
+  s.get(10); assert(s.bits[0] == 0b000111); // Expect return to `begin` state
+  s.get(11); assert(s.bits[0] == 0b001011);
+  s.get(12); assert(s.bits[0] == 0b001101);
+  s.get(13); assert(s.bits[0] == 0b001110);
+  s.get(14); assert(s.bits[0] == 0b010011);
+  s.get(15); assert(s.bits[0] == 0b010101);
+  s.get(16); assert(s.bits[0] == 0b010110);
+  s.get(17); assert(s.bits[0] == 0b011001);
+  s.get(18); assert(s.bits[0] == 0b011010);
+  s.get(19); assert(s.bits[0] == 0b011100); // = rbegin
+  s.get(20); assert(s.bits[0] == 0b000111); // Expect return to `begin` state
 }
 
 void test_fixed_size_subsets_random_access_N7_K4()
@@ -88,7 +83,7 @@ void test_fixed_size_subsets_random_access_N7_K4()
     ++s;
   }
 
-  std::array<int, 3> offsets{};
+  assert(count == 35);
 
   s.get(0);   assert(s.bits[0] == 0b00001111);
   s.get(1);   assert(s.bits[0] == 0b00010111);
@@ -105,6 +100,11 @@ void test_fixed_size_subsets_random_access_N7_K4()
   s.get(++i); assert(s.bits[0] == 0b00110110);
   s.get(++i); assert(s.bits[0] == 0b00111001);
   s.get(++i); assert(s.bits[0] == 0b00111010);
+  {
+    std::array<int, 4> offsets{};
+    s.components(offsets.begin());
+SS << s << "  " << offsets << std::endl;
+  }
   s.get(++i); assert(s.bits[0] == 0b00111100);
   s.get(++i); assert(s.bits[0] == 0b01000111);
   s.get(++i); assert(s.bits[0] == 0b01001011);
@@ -123,24 +123,20 @@ void test_fixed_size_subsets_random_access_N7_K4()
   s.get(++i); assert(s.bits[0] == 0b01101010);
   s.get(++i); assert(s.bits[0] == 0b01101100);
   s.get(++i); assert(s.bits[0] == 0b01110001);
-SS << std::endl;
   s.get(++i); assert(s.bits[0] == 0b01110010);
-SS << std::endl;
   s.get(++i); assert(s.bits[0] == 0b01110100);
-SS << std::endl;
-  s.get(++i); assert(s.bits[0] == 0b01111000);
+  s.get(++i); assert(s.bits[0] == 0b01111000); // = `rbegin`
+  assert(i == 34);
+  s.get(++i); assert(s.bits[0] == 0b00001111); // Expect transition `rbegin` --> `begin`
+  assert(i == 35);
 
-
-  // TODO 10:08 PM Saturday, November 01, 2025. Fix transition into `end` state.
-SS << std::endl;
-SS << s << "  " << offsets << std::endl;
-  s.get(++i); // assert(s.bits[0] == 0b11111000);
-  {
-    s.components(offsets.begin());
-SS << s << "  " << offsets << std::endl;
-    // assert((offsets == std::array{3, 4, 5}));
-    // assert(s == end);
-  }
+  s.get(69); assert(s.bits[0] == 0b01111000); // = `rbegin`
+  s.get(70); assert(s.bits[0] == 0b00001111); // Expect transition `rbegin` --> `begin`
+  // {
+    // std::array<int, 3> offsets{};
+    // s.components(offsets.begin());
+// SS << s << "  " << offsets << std::endl;
+  // }
 }
 
 
@@ -301,8 +297,6 @@ void test_fixed_size_subsets_state_transitions_forward()
     assert(s == begin);
   }
 }
-
-
 
 void test_fixed_size_subsets_state_transitions_backward()
 {

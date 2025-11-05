@@ -220,6 +220,17 @@ namespace ss
   {
     namespace impl
     {
+      /*
+       * Get the jth K-set from an N-set, in O(K(N-K)) time.
+       *
+       * TODO 9:40 PM Tuesday, November 04, 2025. This routines resets the
+       *      given `bits` index to the `begin` state. General displacements
+       *      are in progress.
+       *
+       * assumes: C(N, K) < 2**64. If this assumption is not satisfied, the result is undefined.
+       *
+       * return: the subset index stored in `bits`, modified to point to the next jth K-set
+       */
       // TODO. 8:07 PM Monday, November 03, 2025. In progress.
       constexpr auto& get(auto& bits, std::uint64_t K, std::uint64_t N, std::uint64_t j)
       {
@@ -231,9 +242,12 @@ namespace ss
         std::uint64_t count{};
         auto pos = K-1;
 
+        j %= utils::C(N, K);
+
         // K iterations here
         while(true)
         {
+// SS << "   pos = " << pos << std::endl;
           const auto k0 = pos;
           auto n0 = pos;
 
@@ -257,15 +271,14 @@ namespace ss
 // SS << "     [" << pos << "] bits = "; ss::impl::to_ostream(std::cout, bits, N) << std::endl;
 
 
-            // If we've reached the `end` state, reset to `begin`.
+            // If we've reached the `end` state, reset to `begin` and continue.
             if(n0 == N-1)
             {
 // SS << std::endl;
               begin(bits, K);
-              pos = K-1;
+              pos = K;
               n0 = pos;
-              // set1(bits, K-1);
-              // ++count;
+              break;
             }
 
             n0 += 1;
