@@ -10,6 +10,9 @@ void test_fixed_size_subsets_state_transitions();
 void test_fixed_size_subsets_random_access_N5_K3();
 void test_fixed_size_subsets_random_access_N7_K4();
 
+template<std::uint64_t N, std::uint64_t K>
+void test_fixed_size_subsets_random_access();
+
 void test_fixed_size_subsets()
 {
   std::cout << "────── " << __func__ << " ─────────────────────────────────────────\n";
@@ -21,6 +24,77 @@ void test_fixed_size_subsets()
 
   test_fixed_size_subsets_random_access_N5_K3();
   test_fixed_size_subsets_random_access_N7_K4();
+  test_fixed_size_subsets_random_access<5, 3>();
+  test_fixed_size_subsets_random_access<7, 4>();
+  test_fixed_size_subsets_random_access<17, 7>();
+  test_fixed_size_subsets_random_access<25, 15>();
+  // test_fixed_size_subsets_random_access<33, 14>();
+}
+
+/*
+ * For given m, find the maximum value of K such that
+ *
+ *   C(N, K) <= m
+ */
+// TODO 2:43 PM Wednesday, November 05, 2025.
+constexpr max_K(std::uint64_t N, std::uint64_t m = (1ull << 63) - 1)
+{
+  std::uint64_t C{1};
+  for(std::uint64_t k{}; k <= N/2; ++k)
+  {
+    if(C > m)
+      return k-1;
+
+    C *= N-k;
+    C /= k+1;
+  }
+
+  return N/2;
+}
+
+/*
+ * return: true iff C(N, k) <= m for every k = 0, ..., N/2
+ */
+constexpr bool is_bounded(std::uint64_t N, std::uint64_t m = (1ull << 63) - 1)
+{
+  return max_K(N, m) == N/2;
+}
+
+template<std::uint64_t N, std::uint64_t K>
+void test_fixed_size_subsets_random_access()
+{
+  std::cout << std::format("  {}<{}, {}>", __func__, N, K) << std::endl;
+
+  using namespace ss::fixed_size;
+
+  auto s = subset<N>::template choose<K>(begin);
+  auto t = s;
+
+  std::uint64_t count{1};
+  s.get(1);
+  t = s;
+  while(s != rbegin)
+  {
+    ++count;
+    ++t;
+    s.get(count);
+
+    if(t != s)
+      std::cout << "[" << count << "] t = " << t << '\n'
+                << "     s = " << s << std::endl;
+
+    assert(t == s);
+  }
+
+  s.get(++count);
+  assert(s == begin);
+
+  std::cout << "count = " << count << std::endl;
+
+  if(is_bounded(N))
+    assert(count == ss::utils::C(N,K));
+  else
+    std::cout << "C(" << N << ", " << K << ") >= 2**64" << std::endl;
 }
 
 void test_fixed_size_subsets_random_access_N5_K3()
@@ -71,7 +145,6 @@ void test_fixed_size_subsets_random_access_N7_K4()
 
   using namespace ss::fixed_size;
 
-
   // C(7, 4) = 35
   subset<7> s{begin, 4};
 
@@ -100,11 +173,6 @@ void test_fixed_size_subsets_random_access_N7_K4()
   s.get(++i); assert(s.bits[0] == 0b00110110);
   s.get(++i); assert(s.bits[0] == 0b00111001);
   s.get(++i); assert(s.bits[0] == 0b00111010);
-  {
-    std::array<int, 4> offsets{};
-    s.components(offsets.begin());
-SS << s << "  " << offsets << std::endl;
-  }
   s.get(++i); assert(s.bits[0] == 0b00111100);
   s.get(++i); assert(s.bits[0] == 0b01000111);
   s.get(++i); assert(s.bits[0] == 0b01001011);

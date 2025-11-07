@@ -6,67 +6,68 @@ namespace ss
   {
     namespace impl
     {
+      using namespace ss::impl::arrays;
+
       constexpr void begin(auto& bits, std::uint64_t K)
       {
-        ss::impl::arrays::zero(bits);
-        ss::impl::arrays::set1(bits, 0, K);
+        zero(bits);
+        set1(bits, 0, K);
       }
 
       constexpr void end(auto& bits, std::uint64_t K, std::uint64_t N)
       {
-        ss::impl::arrays::zero(bits);
-        ss::impl::arrays::set1(bits, N-K, N+1);
+        zero(bits);
+        set1(bits, N-K, N+1);
       }
 
       constexpr void rbegin(auto& bits, std::uint64_t K, std::uint64_t N)
       {
-        ss::impl::arrays::zero(bits);
-        ss::impl::arrays::set1(bits, N-K, N);
+        zero(bits);
+        set1(bits, N-K, N);
       }
 
       constexpr void rend(auto& bits, std::uint64_t K, std::uint64_t N)
       {
-        ss::impl::arrays::zero(bits);
-        ss::impl::arrays::set1(bits, 0, K);
-        bits[N >> 6] |= 1ull << (N & 63);
+        zero(bits);
+        set1(bits, 0, K);
+        set1(bits, N, N+1);
       }
 
       constexpr bool is_end(auto& bits, std::uint64_t K, std::uint64_t N)
       {
         return
-          ss::impl::arrays::ones(bits, 0, N-K) == 0 &&
-          ss::impl::arrays::ones(bits, N-K, N) == K &&
-          ss::impl::arrays::test(bits, N);
+          ones(bits, 0, N-K) == 0 &&
+          ones(bits, N-K, N) == K &&
+          test(bits, N);
       }
 
       constexpr bool is_begin(auto& bits, std::uint64_t K, std::uint64_t N)
       {
         return
-          ss::impl::arrays::ones(bits, 0, K) == K &&
-          ss::impl::arrays::ones(bits, K, N+1) == 0;
+          ones(bits, 0, K) == K &&
+          ones(bits, K, N+1) == 0;
       }
 
       constexpr bool is_rbegin(auto& bits, std::uint64_t K, std::uint64_t N)
       {
         return
-          ss::impl::arrays::ones(bits, 0, N-K) == 0 &&
-          ss::impl::arrays::ones(bits, N-K, N) == K &&
-          !ss::impl::arrays::test(bits, N);
+          ones(bits, 0, N-K) == 0 &&
+          ones(bits, N-K, N) == K &&
+          !test(bits, N);
       }
 
       constexpr bool is_rend(auto& bits, std::uint64_t K, std::uint64_t N)
       {
         return
-          ss::impl::arrays::ones(bits, 0, K) == K &&
-          ss::impl::arrays::ones(bits, K, N) == 0 &&
-          ss::impl::arrays::test(bits, N);
+          ones(bits, 0, K) == K &&
+          ones(bits, K, N) == 0 &&
+          test(bits, N);
       }
 
 
       constexpr auto& next(auto& bits, std::uint64_t K, std::uint64_t N)
       {
         using namespace ss::impl;
-        using namespace ss::impl::arrays;
 
         std::uint64_t j{}; // bit counter
         bool prev{false};
@@ -142,7 +143,6 @@ namespace ss
       constexpr auto& prev(auto& bits, std::uint64_t K, std::uint64_t N)
       {
         using namespace ss::impl;
-        using namespace ss::impl::arrays;
 
         std::uint64_t j{}; // bit counter
         bool prev{true};
@@ -212,8 +212,6 @@ namespace ss
   }
 }
 
-#include "../utils/binomial.h"
-
 namespace ss
 {
   namespace fixed_size
@@ -229,52 +227,38 @@ namespace ss
        *
        * assumes: C(N, K) < 2**64. If this assumption is not satisfied, the result is undefined.
        *
-       * return: the subset index stored in `bits`, modified to point to the next jth K-set
+       * return: the subset index stored in `bits`, modified to point to the jth K-set
        */
       // TODO. 8:07 PM Monday, November 03, 2025. In progress.
       constexpr auto& get(auto& bits, std::uint64_t K, std::uint64_t N, std::uint64_t j)
       {
-        using namespace ss::impl::arrays;
-
         // TODO 10:12 PM Saturday, November 01, 2025. Restarting from `begin` for now.
         begin(bits, K);
-// SS << " bits = "; ss::impl::to_ostream(std::cout, bits, N) << std::endl;
         std::uint64_t count{};
         auto pos = K-1;
-
-        j %= utils::C(N, K);
 
         // K iterations here
         while(true)
         {
-// SS << "   pos = " << pos << std::endl;
           const auto k0 = pos;
           auto n0 = pos;
 
           // Number of subset indices with k0 at the current component, with all following
           // components already identified.
-          auto next_stride = utils::C(n0, k0);
+          auto next_stride = 1;
 
           // At most N-K iterations here.
           while(count + next_stride <= j)
           {
             count += next_stride;
-// SS << "     [" << pos << "] next_stride = " << next_stride << std::endl;
-// SS << "     [" << pos << "] count = " << count << std::endl;
-// SS << "     [" << pos << "] n0 = " << n0 << std::endl;
 
             // Replace the point at the n0'th offset with the next point.
-// SS << "     [" << pos << "] bits = "; ss::impl::to_ostream(std::cout, bits, N) << std::endl;
             set0(bits, n0, n0+1);
-// SS << "     [" << pos << "] bits = "; ss::impl::to_ostream(std::cout, bits, N) << std::endl;
             set1(bits, n0+1, n0+2);
-// SS << "     [" << pos << "] bits = "; ss::impl::to_ostream(std::cout, bits, N) << std::endl;
-
 
             // If we've reached the `end` state, reset to `begin` and continue.
             if(n0 == N-1)
             {
-// SS << std::endl;
               begin(bits, K);
               pos = K;
               n0 = pos;
@@ -282,7 +266,8 @@ namespace ss
             }
 
             n0 += 1;
-            next_stride = utils::C(n0, k0);
+            next_stride *= n0;
+            next_stride /= n0-k0;
           }
 
           if(pos == 0)
