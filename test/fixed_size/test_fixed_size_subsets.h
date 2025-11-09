@@ -32,7 +32,7 @@ void test_fixed_size_subsets()
 }
 
 /*
- * For given m, find the maximum value of K such that
+ * For given N and m, find the maximum value of K such that
  *
  *   C(N, K) <= m
  */
