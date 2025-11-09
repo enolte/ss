@@ -6,61 +6,63 @@ namespace ss
   {
     namespace impl
     {
+      using namespace ss::impl::arrays;
+
       constexpr std::uint64_t W(std::size_t L) { return std::bit_width(L); }
 
       constexpr void begin(auto& bits, std::uint64_t L)
       {
-        ss::impl::arrays::zero(bits);
-        ss::impl::arrays::set_value(bits, 0, W(L), L);
+        zero(bits);
+        set_value(bits, 0, W(L), L);
       }
 
       constexpr void end(auto& bits, std::uint64_t L, std::uint64_t N)
       {
-        ss::impl::arrays::zero(bits);
-        ss::impl::arrays::set_value(bits, (N-1)*W(L), W(L), L);
-        ss::impl::arrays::set1(bits, N*W(L), N*W(L)+1);
+        zero(bits);
+        set_value(bits, (N-1)*W(L), W(L), L);
+        set1(bits, N*W(L), N*W(L)+1);
       }
 
       constexpr void rbegin(auto& bits, std::uint64_t L, std::uint64_t N)
       {
-        ss::impl::arrays::zero(bits);
-        ss::impl::arrays::set_value(bits, (N-1)*W(L), W(L), L);
+        zero(bits);
+        set_value(bits, (N-1)*W(L), W(L), L);
       }
 
       constexpr void rend(auto& bits, std::uint64_t L, std::uint64_t N)
       {
-        ss::impl::arrays::zero(bits);
-        ss::impl::arrays::set_value(bits, 0, W(L), L);
-        ss::impl::arrays::set1(bits, N*W(L), N*W(L)+1);
+        zero(bits);
+        set_value(bits, 0, W(L), L);
+        set1(bits, N*W(L), N*W(L)+1);
       }
 
       constexpr bool is_begin(const auto& bits, std::size_t L, std::uint64_t N)
       {
         return
-          ss::impl::arrays::test(bits, W(L)*N) == 0 &&
-          ss::impl::arrays::get_value(bits, 0, W(L)) == L;
+          test(bits, W(L)*N) == 0 &&
+          get_value(bits, 0, W(L)) == L;
       }
 
       constexpr bool is_rbegin(const auto& bits, std::size_t L, std::uint64_t N)
       {
         return
-          ss::impl::arrays::test(bits, W(L)*N) == 0 &&
-          ss::impl::arrays::get_value(bits, W(L)*(N - 1), W(L)) == L;
+          test(bits, W(L)*N) == 0 &&
+          get_value(bits, W(L)*(N - 1), W(L)) == L;
       }
 
       constexpr bool is_end(const auto& bits, std::size_t L, std::uint64_t N)
       {
         return
-          ss::impl::arrays::test(bits, W(L)*N) != 0 &&
-          ss::impl::arrays::get_value(bits, W(L)*(N - 1), W(L)) == L;
+          test(bits, W(L)*N) != 0 &&
+          get_value(bits, W(L)*(N - 1), W(L)) == L;
       }
 
       // TODO 9:36 PM Thursday, October 30, 2025. Test
       constexpr bool is_rend(const auto& bits, std::size_t L, std::uint64_t N)
       {
         return
-          ss::impl::arrays::test(bits, W(L)*N) != 0 &&
-          ss::impl::arrays::get_value(bits, 0, W(L)) == L;
+          test(bits, W(L)*N) != 0 &&
+          get_value(bits, 0, W(L)) == L;
       }
 
       constexpr auto& next(auto& bits, std::size_t L, std::size_t N)
@@ -71,17 +73,17 @@ namespace ss
         auto i{0zu};
         for(; i < N-1; ++i)
         {
-          const auto component_i = ss::impl::arrays::get_value(bits, i*W, W);
+          const auto component_i = get_value(bits, i*W, W);
           initial_count += component_i;
           if(component_i > 0)
           {
-            ss::impl::arrays::set_value(bits, i*W, W, component_i-1);
+            set_value(bits, i*W, W, component_i-1);
 
-            const auto component_ip1 = ss::impl::arrays::get_value(bits, i*W+W, W);
-            ss::impl::arrays::set_value(bits, i*W+W, W, component_ip1+1);
+            const auto component_ip1 = get_value(bits, i*W+W, W);
+            set_value(bits, i*W+W, W, component_ip1+1);
 
-            ss::impl::arrays::set0(bits, 0, i*W+W);
-            ss::impl::arrays::set_value(bits, 0, W, initial_count - 1);
+            set0(bits, 0, i*W+W);
+            set_value(bits, 0, W, initial_count - 1);
 
             return bits;
           }
@@ -90,15 +92,15 @@ namespace ss
         // We're in either `last` state or `end` state @entry
         // If `last`, transition to `end`.
         // If `end`, transition to `begin`.
-        if(!ss::impl::arrays::test(bits, W*N))
+        if(!test(bits, W*N))
         {
-          ss::impl::arrays::set1(bits, W*N, W*N+1);
+          set1(bits, W*N, W*N+1);
           return bits;
         }
         else
         {
-          ss::impl::arrays::zero(bits);
-          ss::impl::arrays::set_value(bits, 0, W, L);
+          zero(bits);
+          set_value(bits, 0, W, L);
           return bits;
         }
       }
@@ -108,7 +110,7 @@ namespace ss
         const auto W{impl::W(L)};
 
         std::uint64_t initial_count{};
-        const auto component_0 = ss::impl::arrays::get_value(bits, 0, W);
+        const auto component_0 = get_value(bits, 0, W);
         if(component_0 > 0)
         {
           initial_count += component_0;
@@ -116,22 +118,22 @@ namespace ss
           // Find the next non-zero component if there is one.
           for(auto i{1zu}; i < N; ++i)
           {
-            const auto component_i = ss::impl::arrays::get_value(bits, i*W, W);
+            const auto component_i = get_value(bits, i*W, W);
             if(component_i > 0)
             {
               initial_count += component_i;
-              ss::impl::arrays::set_value(bits, i*W, W, component_i-1);
-              ss::impl::arrays::set0(bits, 0, i*W);
-              ss::impl::arrays::set_value(bits, i*W-W, W, initial_count-(component_i-1));
+              set_value(bits, i*W, W, component_i-1);
+              set0(bits, 0, i*W);
+              set_value(bits, i*W-W, W, initial_count-(component_i-1));
               return bits;
             }
           }
 
           // No next non-zero. We're in either `begin` or `rend` at entry.
-          if(ss::impl::arrays::test(bits, N*W) == 0)
+          if(test(bits, N*W) == 0)
           {
             // `begin` --> `rend`
-            ss::impl::arrays::set1(bits, N*W, N*W+1);
+            set1(bits, N*W, N*W+1);
           }
           else
           {
@@ -145,18 +147,38 @@ namespace ss
         auto i{1zu};
         for(; i < N; ++i)
         {
-          const auto component_i = ss::impl::arrays::get_value(bits, i*W, W);
+          const auto component_i = get_value(bits, i*W, W);
           if(component_i > 0)
           {
-            ss::impl::arrays::set_value(bits, i*W, W, component_i-1);
-            const auto component_im1 = ss::impl::arrays::get_value(bits, i*W-W, W);
-            ss::impl::arrays::set_value(bits, i*W-W, W, component_im1+1);
+            set_value(bits, i*W, W, component_i-1);
+            const auto component_im1 = get_value(bits, i*W-W, W);
+            set_value(bits, i*W-W, W, component_im1+1);
             break;
           }
 
         }
 
         return bits;
+      }
+
+      /*
+       * Get the jth multi-set in iteration order of the length L multi-sets on an N-set.
+       *
+       * TODO 9:40 PM Tuesday, November 04, 2025. This routines resets the
+       *      given `bits` index to the `begin` state. General displacements
+       *      are in progress.
+       *
+       * return: the multiindex stored in `bits`, modified to point to the jth multi-set
+       */
+      // TODO. 5:37 PM Friday, November 07, 2025. In progress.
+      constexpr auto& get(auto& bits, std::uint64_t L, std::uint64_t N, std::uint64_t j)
+      {
+        constexpr auto W{impl::W(L)};
+
+        begin(bits, L);
+        std::uint64_t count{};
+        auto pos = W*(N-1);
+
       }
     }
   }

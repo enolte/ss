@@ -14,10 +14,15 @@ void test_multiset();
 template<std::uint64_t N, std::uint64_t L>
 void test_iteration_cycles();
 
+void test_multiset_N5_L3();  // Explicit component checks at each iteration
+void test_multiset_N10_L3(); // Explicit component checks at first and last several iterations
+
 void test_multiset()
 {
-
   std::cout << "────── " << __func__ << " ─────────────────────────────────────────\n";
+
+  test_multiset_N10_L3();
+  test_multiset_N5_L3();
 
   test_multiset_components<3, 5>();
   test_multiset_components<4, 5>();
@@ -128,17 +133,19 @@ void test_multiset()
   else
     std::cout << "    Counting forward: (expect " << ss::utils::C(N + L - 1, L) << ") " << std::flush;
 
-// SS << mm << "  " << mm.components() << std::endl;
+  std::size_t count{};
   std::uint64_t nsubsets{};
   while(!impl::is_end(mm.bits, L, N))
   {
     if constexpr(write_to_stdout)
     {
-      std::cout << mm << "  " << mm.components() << std::endl;
+      std::cout << "[" << std::format("{:>2}", count) << "] " << mm << "  " << mm.components() << std::endl;
     }
 
     impl::next(mm.bits, L, N);
     ++nsubsets;
+
+    ++count;
   }
   std::cout << "nsubsets = "     << nsubsets << std::endl;
   assert(nsubsets == ss::utils::C(N + L - 1, L));
@@ -153,9 +160,10 @@ void test_multiset()
 // SS << mm << "  " << mm.components() << std::endl;
   while(!impl::is_rend(mm.bits, L, N))
   {
+    --count;
     if constexpr(write_to_stdout)
     {
-      std::cout << mm << "  " << mm.components() << std::endl;
+      std::cout << "[" << std::format("{:>2}", count) << "] " << mm << "  " << mm.components() << std::endl;
     }
 
     impl::prev(mm.bits, L, N);
@@ -167,10 +175,9 @@ void test_multiset()
   }
   std::cout << "nsubsets = "     << nsubsets << std::endl;
   assert(nsubsets == ss::utils::C(N + L - 1, L));
+  assert(count == 0);
 }
 
-
-#if 0
 void test_multiset_N5_L3()
 {
   std::cout << std::format("  {}", __func__) << std::endl;
@@ -309,8 +316,6 @@ void test_multiset_N5_L3()
 
 }
 
-
-
 void test_multiset_N10_L3()
 {
   std::cout << std::format("  {}", __func__) << std::endl;
@@ -330,14 +335,25 @@ void test_multiset_N10_L3()
   impl::next(mm.bits, 3, 10);  assert((mm.components() == components{2, 0, 1, 0, 0, 0, 0, 0, 0, 0}));
 
   // Jump ahead
-  mm = index<N, L>{0, 0, 0, 0, 0, 0, 0, 0, 2, 1};
+  // Set mm = index<N, L>{0, 0, 0, 0, 0, 0, 0, 0, 2, 1};
+  mm = index<N, L>{begin};
+  mm.bits = {};
+  ss::impl::arrays::set_value(mm.bits, (N-2)*mm.W, mm.W, 2);
+  ss::impl::arrays::set_value(mm.bits, (N-1)*mm.W, mm.W, 1);
+  // SS << mm.components() << std::endl;
+  assert((mm.components() == components{0, 0, 0, 0, 0, 0, 0, 0, 2, 1}));
 
   impl::next(mm.bits, 3, 10);  assert((mm.components() == components{1, 0, 0, 0, 0, 0, 0, 0, 0, 2}));
   impl::next(mm.bits, 3, 10);  assert((mm.components() == components{0, 1, 0, 0, 0, 0, 0, 0, 0, 2}));
   impl::next(mm.bits, 3, 10);  assert((mm.components() == components{0, 0, 1, 0, 0, 0, 0, 0, 0, 2}));
 
   // Jump ahead
-  mm = index<N, L>{0, 0, 0, 0, 0, 0, 0, 0, 1, 2};
+  // Set mm = index<N, L>{0, 0, 0, 0, 0, 0, 0, 0, 1, 2};
+  mm = index<N, L>{begin};
+  mm.bits = {};
+  ss::impl::arrays::set_value(mm.bits, (N-2)*mm.W, mm.W, 1);
+  ss::impl::arrays::set_value(mm.bits, (N-1)*mm.W, mm.W, 2);
+  assert((mm.components() == components{0, 0, 0, 0, 0, 0, 0, 0, 1, 2}));
 
   impl::next(mm.bits, 3, 10);  assert((mm.components() == components{0, 0, 0, 0, 0, 0, 0, 0, 0, 3})); // last
   impl::next(mm.bits, 3, 10);  assert((mm.components() == components{0, 0, 0, 0, 0, 0, 0, 0, 0, 3})); // end
@@ -348,11 +364,9 @@ void test_multiset_N10_L3()
   int nsubsets{};
   while(!impl::is_end(mm.bits, L, N))
   {
-    impl::next(mm, 3, 10);
+    impl::next(mm.bits, 3, 10);
     ++nsubsets;
   }
   std::cout << "nsubsets = "     << nsubsets << std::endl;
   assert(nsubsets == ss::utils::C(N + L - 1, L));
 }
-
-#endif

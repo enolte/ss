@@ -8,6 +8,8 @@ This repo includes a collection of generative algorithms for operations on subse
 the power set of a set $X$. I've used these algorithms for sundry projects over time. They're re-written
 here to the C++23 standard, optimized for time and memory, and with full generality of scope.
 
+The underlying set is modeled as the usual abstraction, $X = \left\\{0,\\; ...,\\; N-1\right\\}$. In other words, an integer is a set. In practice, $X$ itself is usually an external index into some other data structure, so there is no loss of generality here.
+
 ## Scope
 
 This repo implements 3 kinds of algorithms.
@@ -18,25 +20,57 @@ This repo implements 3 kinds of algorithms.
 
 Each of these does what it sounds like it does. I might add others later.
 
-For each of these, there is a legacy impl originally written for historical reasons. Time complexity asymptotics are mentioned below.
-
+Each of these algorithms has a legacy implementation.
 This repo replaces those impls with memory-efficient bitwise versions with equivalent functionality.
+Time complexity asymptotics are mentioned below.
 
-As of today (Saturday, November 01, 2025), only the new impls are uploaded here. When the updated impls are complete and performance comparisons tests are at least minimally complete, the older impls will be uploaded here for comparison. Power sets are inherently extremely large (in the sense that they grow very quickly), so some discussion of execution speed and memory consumption is also to be included. Commentary for these topics in this document is also in progress.
+As of today (Sunday, November 09, 2025), only the new impls for fixed-size and multi-sets are uploaded here.
+When the updated impls are complete and performance comparisons tests are at least minimally complete, the older impls will be uploaded here for comparison.
+Power sets are inherently extremely large (in the sense that they grow very quickly), so some discussion of execution speed and memory consumption is also to be included.
 
-The underlying set is modeled as the usual abstraction, $X = \left\\{0,\\; ...,\\; N-1\right\\}$. In other words, an integer is a set. In practice, $X$ itself is usually an external index into some other data structure, so there is no loss of generality here.
+Commentary for these topics in this document is also in progress.
 
 
 ## Status
 
-(_2:38 PM Wednesday, November 05, 2025_)
+(_2:01 PM Sunday, November 09, 2025_)
 
-Random-access iteration for fixed-size subsets is now cyclic.
-Still needs improvements, but it works as is.
+I might be pausing work on this repo for a brief period. Current status of all iteration implementations:
+
+|                              |forward iteration|backward iteration|random access iteration|uploaded|
+|:-----------------------------|:----------------|:-----------------|:----------------------|--------|
+|fixed-size (bitwise)          | done            | done             | working (1)           | yes    |
+|fixed-size (`std::bitset`)    | done            | done             | not started           | no     |
+|fixed-size (`std::size_t`s)   | done            | done             | working (1)           | no     |
+|multi-sets (bitwise)          | done            | done             | in progress           | yes    |
+|multi-sets (`std::bitset`) (2)| not started     | not started      | not started           | no     |
+|multi-sets (`std::size_t`s)   | done            | done             | in progress           | no     |
+|power set  (bitwise)          | done            | done             | not planned (3)       | no     |
+
+(1) For now, random access iteration requires restarting from `begin` state. Removing this requirement is
+a TODO. Iteration is _not_ done by successive forward states; it is currently implemented by successive binomial strides.
+
+(2) Multi-sets done with a std::bitset are probably an indicator implementation. This may or may not be done for this repo.
+
+(3) This is arbitrary-sized integer arithmetic, which is not the intent of this repo.
+
+
+Subset sums
+
+|                   |           |uploaded|
+|:------------------|:----------|--------|
+| positive sets     |done       | yes    |
+| nonnegative sets  |in progress| no     |
+| arbitrary sets    |in progress| no     |
 
 
 <details>
 <summary><h3>Previous updates</h3></summary>
+
+(_2:38 PM Wednesday, November 05, 2025_)
+
+Random access iteration for fixed-size subsets is now cyclic.
+Still needs improvements, but it works as is.
 
 (_8:01 PM Monday, November 03, 2025_)
 
@@ -47,14 +81,14 @@ Progress with fixed-size random access. With $C:=\binom{N}{K}$, getting the $C^{
 Progress with multi-set iteration.
 
 * Fixed-size subset iteration: bit-packed impl random-access is pending. Otherwise complete.
-* Multi-set iteration: bit-packed impl now does bidirectional iteration. Random-access is pending.
+* Multi-set iteration: bit-packed impl now does bidirectional iteration. Random access is pending.
 * Subset summation: working for positive sets, in progress for the general case. Needs minor unit test improvements for the positive-set case.
 
 (_7:57 PM Friday, October 24, 2025_)
 
-Work in progress. I have working versions of each implementation described below, but I'm in progress with updating the newer, faster ones for multiindices, and also with completing the general case of subset summation. Until then, they won't be included in this repo.
+Work in progress. Addign code to this repo beginning today. I have working versions of each implementation described below, but I'm in progress with updating the newer, faster ones for multiindices, and also with completing the general case of subset summation. Until then, they won't be included in this repo.
 
-* Fixed-size subset iteration: Random-access iteration is pending. Otherwise complete.
+* Fixed-size subset iteration: Random access iteration is pending. Otherwise complete.
 * Multi-set iteration: offset-based impl is complete (not included in this repo yet), bit-packed implementation is in progress
 * Subset summation: working for positive sets, in progress for the general case. Needs minor unit test improvements for the positive-set case.
 
@@ -70,6 +104,61 @@ $ g++ --std=c++23 test/main.cpp
 compiles and links all unit tests. Verification requires only a small number of tests for this repo.
 
 Unit tests cover fixed-size iteration, multiindex iteration, and subset summations.
+
+## Subset accumulation
+
+A simple dynamic programming implementation. Each previous subset sum is re-used by adding the next encountered
+point to that sum. The result is a histogram of subset sums, returned as `std::unordered_map<std::int64_t, std::uint64_t>`.
+
+This is essentially computing but not evaluating a generating polynomial, where each exponent in the polynomial
+is a partial sum of set entries. With each encountered point, the polynomial is updated, and the accumulated sums are updated by rescanning the exponents. This is implicit in the dynamic programming implementation.
+
+This is currently implemented only for sets (no duplicate elements). This may change later.
+
+### Example
+
+If $S = \\{1, 4, 5, 7\\}$, the generator $p$ is initialized to $p(x) = 1 = 1 + x^0$. The 0 exponent is the sum of points in the empty set.
+Points are processed in encounter order.
+
+* When the point 1 is encountered, $p$ changes: $p \leftarrow p(1 + x^1) = 1 + x$. The exponents 0 and 1 are the subset sums for $\left\\{\emptyset, \\{1\\}\right\\}$.
+
+* When the point 4 is encountered, $p \leftarrow p(1 + x^4) = 1 + x + x^4 + x^5$. The exponents are now 0, 1, 4, 5,
+for the subsets $\left\\{\emptyset, \\{1\\}, \\{4\\}, \\{1, 4\\}\right\\}$.
+
+* For point 5, $p \leftarrow p(1 + x^5) = 1   + x   + x^4 + 2x^5 + x^6 + x^9 + x^{10}$, for $\left\\{\emptyset, \\{1\\}, \\{4\\}, \\{1, 4\\}, \\{5\\}, \\{1,5\\}, \\{4, 5\\}, \\{1, 4, 5\\}\right\\}$.
+There are 2 subsets whose sum is 5.
+
+* For point 7, $p \leftarrow p(1 + x^7) = 1   + x   + x^4    + 2x^5   + x^6 + x^7 + x^8 +  x^9   + x^{10} + x^{11} + 2x^{12}+ x^{13}+ x^{16}+ x^{17}$. The exponents are for the sets
+$\left\\{\emptyset, \\{1\\},   \\{4\\},    \\{1, 4\\},    \\{5\\},   \\{1, 5\\},    \\{4, 5\\},    \\{1, 4, 5\\},
+\\{7\\},   \\{1,7\\}, \\{4, 7\\}, \\{1, 4, 7\\}, \\{5, 7\\},\\{1, 5, 7\\}, \\{4, 5, 7\\}, \\{1, 4, 5, 7\\}\right\\} = \mathcal{P}(S)$,
+and there are two sets with sum = 5 and two with sum = 12.
+
+In table form, the implementation deduces the following:
+
+|sum|count|subsets|
+|--:|-----|-------|
+| 0 |  1  | $\emptyset$
+| 1 |  1  | $\left\\{1\right\\}$
+| 4 |  1  | $\left\\{4\right\\}$
+| 5 |  2  | $\left\\{5\right\\}, \left\\{1,4\right\\}$
+| 6 |  1  | $\left\\{1, 5\right\\}$
+| 7 |  1  | $\left\\{7\right\\}$
+| 8 |  1  | $\left\\{1, 7\right\\}$
+| 9 |  1  | $\left\\{4, 5\right\\}$
+|10 |  1  | $\left\\{1, 4, 5\right\\}$
+|11 |  1  | $\left\\{4, 7\right\\}$
+|12 |  2  | $\left\\{1, 4, 7\right\\}, \left\\{5, 7\right\\}$
+|13 |  1  | $\left\\{1, 5, 7\right\\}$
+|16 |  1  | $\left\\{4, 5, 7\right\\}$
+|17 |  1  | $\left\\{1, 4, 5, 7\right\\} = S$
+
+The result is returned as a histogram / table of <sum, count>, the first 2 columns from the table above.
+
+TODO 3:18 PM Sunday, November 09, 2025. Return only those counts for a sum in a specififed [min, max].
+
+TODO 3:33 PM Sunday, November 09, 2025. Return a third component, the offset index of each subset in iteration order.
+
+
 
 ## Fixed-size subset iteration
 
@@ -120,7 +209,7 @@ output is the left-to-right reverse of the above table.)
 /*
   Compiled with
 
-    g++ --std=c++23 -I. examples/00/example.cpp
+    g++ --std=c++23 -I. examples/fixed-size-all-subsets/example.cpp
 
   from the ss repo root.
  */

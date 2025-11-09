@@ -32,12 +32,12 @@ void test_fixed_size_subsets()
 }
 
 /*
- * For given m, find the maximum value of K such that
+ * For given N and m, find the maximum value of K such that
  *
  *   C(N, K) <= m
  */
 // TODO 2:43 PM Wednesday, November 05, 2025.
-constexpr max_K(std::uint64_t N, std::uint64_t m = (1ull << 63) - 1)
+constexpr std::uint64_t max_K(std::uint64_t N, std::uint64_t m = (1ull << 63) - 1)
 {
   std::uint64_t C{1};
   for(std::uint64_t k{}; k <= N/2; ++k)
