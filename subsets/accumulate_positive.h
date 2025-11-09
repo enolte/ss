@@ -17,11 +17,6 @@ namespace ss
    *
    * The returned map always includes an entry {0, 1}, for the empty set.
    *
-   * Time complexity: Θ(N * S * log(S)),
-   *
-   *  N = number of points in set
-   *  S = number of subset sums to compute
-   *
    * return: A map of subset sums
    */
   std::unordered_map<std::int64_t, std::uint64_t> accumulate_positive(std::ranges::range auto set)

@@ -1,7 +1,7 @@
 /*
   Compiled with
 
-    g++ --std=c++23 -I. examples/00/example.cpp
+    g++ --std=c++23 -I. examples/fixed-size-all-subsets/example.cpp
 
   from the ss repo root.
  */
