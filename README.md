@@ -59,7 +59,7 @@ Subset sums
 
 |                   |           |uploaded|
 |:------------------|:----------|--------|
-| positive sets     |done       | no     |
+| positive sets     |done       | yes    |
 | nonnegative sets  |in progress| no     |
 | arbitrary sets    |in progress| no     |
 
