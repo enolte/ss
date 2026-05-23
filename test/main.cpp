@@ -3,18 +3,18 @@
 #include "../utils/binomial.h"
 
 #include "test_bits.h"
-#include "test_accumulate_positive.h"
+#include "test_accumulate.h"
 #include "test_multiset.h"
-#include "fixed_size/test_fixed_size_subsets.h"
-#include "fixed_size/test_fixed_size_bits.h"
+#include "fixed_size/test_fixed_size.h"
+#include "power_set/test_power_set.h"
 
 int main()
 {
   test_bits();
-  test_accumulate_positive();
+  test_power_set();
+  test_accumulate();
   test_multiset();
-  test_fixed_size_bits();
-  test_fixed_size_subsets();
+  test_fixed_size();
 
   std::cout << "end tests" << std::endl;
 

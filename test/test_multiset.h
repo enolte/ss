@@ -92,27 +92,27 @@ void test_multiset_components()
   static_assert(c.size() == N);
 
   assert(c[0] == L);
-  for(int i{1}; i < N; ++i)
+  for(std::uint64_t i{1}; i < N; ++i)
     assert(c[i] == 0);
 
   ++mm;
   c = mm.components();
   assert(c[0] == L-1);
   assert(c[1] == 1);
-  for(int i{2}; i < N; ++i)
+  for(std::uint64_t i{2}; i < N; ++i)
     assert(c[i] == 0);
 
   mm = rbegin;
   c = mm.components();
   assert(c[N-1] == L);
-  for(int i{0}; i < N-1; ++i)
+  for(std::uint64_t i{0}; i < N-1; ++i)
     assert(c[i] == 0);
 
   --mm;
   c = mm.components();
   assert(c[N-1] == L-1);
   assert(c[N-2] == 1);
-  for(int i{0}; i < N-2; ++i)
+  for(std::uint64_t i{0}; i < N-2; ++i)
     assert(c[i] == 0);
 }
 

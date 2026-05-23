@@ -12,26 +12,93 @@ The underlying set is modeled as the usual abstraction, $X = \left\\{0,\\; ...,\
 
 ## Scope
 
-This repo implements 3 kinds of algorithms.
+This repo implements 4 kinds of algorithms.
 
 * Fixed-size subset iteration
 * Multi-set iteration
 * Subset sum accumulation
+* Full power set iteration
 
 Each of these does what it sounds like it does. I might add others later.
 
-Each of these algorithms has a legacy implementation.
-This repo replaces those impls with memory-efficient bitwise versions with equivalent functionality.
-Time complexity asymptotics are mentioned below.
+Each of these algorithms has a legacy implementation. This repo replaces those impls with memory-efficient bitwise versions with equivalent functionality. Time complexity asymptotics are mentioned below.
 
-As of today (Sunday, November 09, 2025), only the new impls for fixed-size and multi-sets are uploaded here.
-When the updated impls are complete and performance comparisons tests are at least minimally complete, the older impls will be uploaded here for comparison.
+For full power set iteration, ordering by subset size is already implied by the impls for fixed-size subset iteration. It's listed separately because iteration by the usual counting order is also to be included. 
+
+Counting order on N points is the same a standard N-dimensional z-order point selection for the vertices of the N-cube. I intend to use this particular order in another repo to be published which I haven't made public yet. This is pending.
+
 Power sets are inherently extremely large (in the sense that they grow very quickly), so some discussion of execution speed and memory consumption is also to be included.
 
 Commentary for these topics in this document is also in progress.
 
 
 ## Status
+
+(_10:44 Wednesday, May 27, 2026_)
+
+Subset sum accumulation is fully working now. Next for that is performance measurement and optimization. This will come later. Subset sum table below updated.
+
+(_12:49 Monday, May 25, 2026_)
+
+Added direct support for power set iteration with the counting order (= n-dimensional cubic z-order). Size-order is next. Size-order is already implied by using fixed-size iteration with sequentially increasing subset sizes, but direct execution for the full power set is probably faster anyway.
+
+Current status of all iteration implementations is this:
+
+|                      |forward iteration    |backward iteration    |random access iteration|uploaded|
+|:---------------------|:--------------------|:---------------------|:----------------------|--------|
+|fixed-size            | done                | done                 | working (1)           | yes    |
+|multi-sets            | done                | done                 | in progress           | yes    |
+|power set, z-order    | done                | done                 | not planned (3)       | yes    |
+|power set, size order | in progress         | in progress          | not planned (3)       | no     |
+
+(1) For now, random access iteration requires restarting from `begin` state. Removing this requirement is
+a TODO. Iteration is _not_ done by successive forward states; it is currently implemented by successive binomial strides.
+
+(3) This is arbitrary-sized integer arithmetic, which is not the intent of this repo.
+
+Current status of subset sums implementation:
+
+|                                      |           |uploaded|
+|:-------------------------------------|:----------|--------|
+| positive sets, unique values         |done       | yes    |
+| nonnegative sets, unique values      |done       | yes    |
+| nonnegative sets, non-unique values  |done       | yes    |
+| arbitrary values, unique values      |done       | yes    |
+| arbitrary values, non-unique values  |done       | yes    |
+
+
+<summary><h3>Previous updates</h3></summary>
+<details>
+
+(_16:22 Saturday, May 23, 2026_)
+
+Currently adding direct support for power set iteration with two iteration orders: usual counting order (= n-dimensional cubic z-order), and size order (= partial ordering by increasing set size). When these are done, I'll upload them here. Size-order is already implied by using fixed-size iteration with sequentially increasing subset sizes, but direct execution for the full power set is probably faster anyway.
+
+I'll probably drop the intent to upload previous versions of the algorithms implemented. While they're maybe pedagogically interesting, I probably don't have time to provide them with full test covergae and performance results. This also means there won't be a performance comparison tool for different implementations.
+
+So the updated current status of all iteration implementations is this:
+
+|                              |forward iteration    |backward iteration    |random access iteration|uploaded|
+|:-----------------------------|:--------------------|:---------------------|:----------------------|--------|
+|fixed-size (bitwise)          | done                | done                 | working (1)           | yes    |
+|multi-sets (bitwise)          | done                | done                 | in progress           | yes    |
+|power set  (bitwise)          | done (z-order) (2)  | done (z-order) (2)   | not planned (3)       | yes    |
+
+(1) For now, random access iteration requires restarting from `begin` state. Removing this requirement is
+a TODO. Iteration is _not_ done by successive forward states; it is currently implemented by successive binomial strides.
+
+(2) size-order is in progress (11:57 Monday, May 25, 2026)
+
+(3) This is arbitrary-sized integer arithmetic, which is not the intent of this repo.
+
+Current status of subset sums implementation:
+
+|                   |           |uploaded|
+|:------------------|:----------|--------|
+| positive sets     |done       | yes    |
+| nonnegative sets  |in progress| no     |
+| arbitrary sets    |in progress| no     |
+
 
 (_2:01 PM Sunday, November 09, 2025_)
 
@@ -62,10 +129,6 @@ Subset sums
 | positive sets     |done       | yes    |
 | nonnegative sets  |in progress| no     |
 | arbitrary sets    |in progress| no     |
-
-
-<details>
-<summary><h3>Previous updates</h3></summary>
 
 (_2:38 PM Wednesday, November 05, 2025_)
 
@@ -120,15 +183,15 @@ This is currently implemented only for sets (no duplicate elements). This may ch
 If $S = \\{1, 4, 5, 7\\}$, the generator $p$ is initialized to $p(x) = 1 = 1 + x^0$. The 0 exponent is the sum of points in the empty set.
 Points are processed in encounter order.
 
-* When the point 1 is encountered, $p$ changes: $p \leftarrow p(1 + x^1) = 1 + x$. The exponents 0 and 1 are the subset sums for $\left\\{\emptyset, \\{1\\}\right\\}$.
+* When the point 1 is encountered, $p$ changes: $p \leftarrow p\cdot(1 + x^1) = 1 + x$. The exponents 0 and 1 are the subset sums for $\left\\{\emptyset, \\{1\\}\right\\}$.
 
-* When the point 4 is encountered, $p \leftarrow p(1 + x^4) = 1 + x + x^4 + x^5$. The exponents are now 0, 1, 4, 5,
+* When the point 4 is encountered, $p \leftarrow p\cdot(1 + x^4) = 1 + x + x^4 + x^5$. The exponents are now 0, 1, 4, 5,
 for the subsets $\left\\{\emptyset, \\{1\\}, \\{4\\}, \\{1, 4\\}\right\\}$.
 
-* For point 5, $p \leftarrow p(1 + x^5) = 1   + x   + x^4 + 2x^5 + x^6 + x^9 + x^{10}$, for $\left\\{\emptyset, \\{1\\}, \\{4\\}, \\{1, 4\\}, \\{5\\}, \\{1,5\\}, \\{4, 5\\}, \\{1, 4, 5\\}\right\\}$.
+* For point 5, $p \leftarrow p\cdot(1 + x^5) = 1   + x   + x^4 + 2x^5 + x^6 + x^9 + x^{10}$, for $\left\\{\emptyset, \\{1\\}, \\{4\\}, \\{1, 4\\}, \\{5\\}, \\{1,5\\}, \\{4, 5\\}, \\{1, 4, 5\\}\right\\}$.
 There are 2 subsets whose sum is 5.
 
-* For point 7, $p \leftarrow p(1 + x^7) = 1   + x   + x^4    + 2x^5   + x^6 + x^7 + x^8 +  x^9   + x^{10} + x^{11} + 2x^{12}+ x^{13}+ x^{16}+ x^{17}$. The exponents are for the sets
+* For point 7, $p \leftarrow p\cdot(1 + x^7) = 1   + x   + x^4    + 2x^5   + x^6 + x^7 + x^8 +  x^9   + x^{10} + x^{11} + 2x^{12}+ x^{13}+ x^{16}+ x^{17}$. The exponents are for the sets
 $\left\\{\emptyset, \\{1\\},   \\{4\\},    \\{1, 4\\},    \\{5\\},   \\{1, 5\\},    \\{4, 5\\},    \\{1, 4, 5\\},
 \\{7\\},   \\{1,7\\}, \\{4, 7\\}, \\{1, 4, 7\\}, \\{5, 7\\},\\{1, 5, 7\\}, \\{4, 5, 7\\}, \\{1, 4, 5, 7\\}\right\\} = \mathcal{P}(S)$,
 and there are two sets with sum = 5 and two with sum = 12.
@@ -242,7 +305,7 @@ The following program code prints the first 10 subsets of $(N, K) = (89, 65)$ to
 /*
   Compiled with
 
-    g++ --std=c++23 -I. examples/00/example.cpp
+    g++ --std=c++23 -I. examples/fized-size-first-10-subsets/example.cpp
 
   from the ss repo root.
  */
@@ -268,8 +331,9 @@ int main()
 
 ```
 
-This code is in [examples/00/example.cpp](examples/00/example.cpp)
+This code is in [examples/fized-size-first-10-subsets/example.cpp](examples/00/example.cpp)
 
+Other [examples](examples/) are in progress.
 
 
 ### Bidirectional iteration
@@ -323,25 +387,23 @@ that come to mind. When I've selected one, that will proceed.
 
 In progress.
 
-These tests compare different implementations for each of the
-subset types in this repo. That are completed for fixed-size subsets. When I have time, I'll finish perf tests
-for multi-sets and upload the results.
+These tests compare different implementations for each of the subset types in this repo. These are completed for fixed-size subsets. When I have time, I'll finish perf tests for multi-sets and upload the results.
+
+All performance tests are with a `-O3` optimized build. No further exec time improvement techniques (hand-tuned asm, threading / atomics, SIMD, CUDA, etc.) are reported here.
 
 On my host, the following tables are a brief sample of results for fixed-size subsets described below.
 * After the N and K columns, the next column in each table is the fastest absolute (`(abs)`) execution time
 for forward or backward iteration.
-* The columns thereafter are exec times relative to those two columns.
+* The columns thereafter are exec times relative (`(rel)`) to the `ss::bits` column.
 
-Note: Times in the `(abs)` column are for static allocation with *on-frame access only*.
-Accessing a subset off-frame incurs a penalty of ~4ns on my host system.
+Note: Times in the `(abs)` column are for static allocation with *on-frame access only*. Accessing a subset off-frame incurs a penalty of ~4ns on my host system.
 
 Source impls compared here:
 * `ss::index`: a `std::vector<std::uint64_t>`, sparse offset index into the underlying set.
 This is the previous impl I used for these utilites.
-* `ss::bits`: a `std::array<std::uint64_t>`, bit-packed and dense. This is the new impl.
+* `ss::bits`: a `std::array` of int types, bit-packed and dense. This is the new impl.
 
-Data collected over a minimum of 10,000,000 iterations for each
-value.
+Each data point is collected over a minimum of 10,000,000 iterations for each value.
 
 Table units are `[ns / subset]`.
 

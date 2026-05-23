@@ -2,6 +2,7 @@
 #include <cassert>
 
 #include "../../subsets/fixed_size.h"
+#include "test_fixed_size_bits.h"
 
 void test_fixed_size_subsets_construct();
 void test_fixed_size_subsets_ordering();
@@ -12,6 +13,14 @@ void test_fixed_size_subsets_random_access_N7_K4();
 
 template<std::uint64_t N, std::uint64_t K>
 void test_fixed_size_subsets_random_access();
+
+void test_fixed_size_subsets();
+
+void test_fixed_size()
+{
+  test_fixed_size_bits();
+  test_fixed_size_subsets();
+}
 
 void test_fixed_size_subsets()
 {
@@ -321,21 +330,6 @@ void test_fixed_size_subsets_state_transitions_forward()
 
   auto s = ss::fixed_size::subset<7>::choose<5>(rend);
 
-  auto state = [](const auto& s)
-  {
-      if (s == begin)
-        return "begin  ";
-      else if (s == end)
-        return "end    ";
-      else if (s == rbegin)
-        return "rbegin ";
-      else if (s == rend)
-        return "rend   ";
-      else
-        return "ELSE   ";
-  };
-
-
   // rbegin --> end --> begin
   {
     auto s = ss::fixed_size::subset<7>::choose<5>(rbegin);
@@ -369,20 +363,6 @@ void test_fixed_size_subsets_state_transitions_forward()
 void test_fixed_size_subsets_state_transitions_backward()
 {
   using namespace ss::fixed_size;
-
-  auto state = [](const auto& s)
-  {
-      if (s == begin)
-        return "begin  ";
-      else if (s == end)
-        return "end    ";
-      else if (s == rbegin)
-        return "rbegin ";
-      else if (s == rend)
-        return "rend   ";
-      else
-        return "ELSE   ";
-  };
 
   {
     auto s = subset<5>::choose<2>(rbegin);

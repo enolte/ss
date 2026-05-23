@@ -220,7 +220,7 @@ namespace ss
       constexpr void set_value(auto& bits, std::uint64_t j, std::uint64_t W, std::uint64_t value)
       {
         auto b{j};
-        for(int i{}; i < W; ++i)
+        for(std::uint64_t i{}; i < W; ++i)
         {
           // bits[b >> 6] =
             // (int)(bool)(value & (1 << i)) * (bits[b >> 6] | 1ull << ((i + j) & 63))
@@ -246,8 +246,7 @@ namespace ss
       constexpr std::uint64_t get_value(auto& bits, std::uint64_t j, std::uint64_t W)
       {
         std::uint64_t value{};
-        auto b{j};
-        int offset{};
+        std::uint64_t offset{};
         for(auto i{j}; i < j + (W&63); ++i)
         {
           value |= ((int)(bool)test(bits, i)) << offset;
@@ -257,7 +256,7 @@ namespace ss
         return value;
       }
 
-/*
+#if 0
       // TODO 8:46 PM Friday, October 03, 2025 Finish.
       // Shift bits up by `count`.
       constexpr auto& shift_up(auto& bits, std::uint64_t N, std::uint64_t count)
@@ -292,8 +291,7 @@ namespace ss
 
         return bits;
       }
-*/
-
+#endif
     }
 
     template<typename ostream, std::uint64_t L>
