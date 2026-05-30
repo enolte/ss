@@ -58,6 +58,23 @@ void test_accumulate_nonunique()
 
   using ilist = std::initializer_list<std::int64_t>;
 
+  test_accumulate(ilist{3, 3, 3},
+    {
+      { 0, 1},
+      { 3, 3},
+      { 6, 3},
+      { 9, 1},
+    });
+
+  test_accumulate(ilist{-1, 0, 0, -1, 2},
+    {
+      { 0, 8}, // {}, {0}, {0}, {0, 0}, {-1, -1, 2}, {-1, 0, -1, 2}, ...
+      {-1, 8},
+      {-2, 4},
+      { 1, 8},
+      { 2, 4}
+    });
+
   test_accumulate(ilist{-1, 0, -1, 4, 5, 7},
     {
                // TODO 10:33 Wednesday, May 27, 2026. Table incomplete.

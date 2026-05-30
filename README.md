@@ -34,6 +34,28 @@ Commentary for these topics in this document is also in progress.
 
 ## Status
 
+(_13:31 Saturday, May 30, 2026_)
+
+Current status of all iteration implementations is this:
+
+|                      |forward iteration    |backward iteration    |random access iteration|uploaded|
+|:---------------------|:--------------------|:---------------------|:----------------------|--------|
+|fixed-size            | done                | done                 | working (1)           | yes    |
+|multi-sets            | done                | done                 | in progress (2)       | yes    |
+|power set, z-order    | done                | done                 | not planned (3)       | yes    |
+|power set, size order | in progress         | in progress          | not planned (3)       | no     |
+
+* (1) For now, random access iteration requires restarting from `begin` state. Removing this requirement is a TODO. Iteration is _not_ done by successive forward states; it is currently implemented by successive binomial strides.
+* (2) This will probably be in progress for a while. I'll get to this when I have time.
+* (3) This is arbitrary-sized integer arithmetic, which is not the intent of this repo.
+
+Subset sum accumulation is done. Next for that is performance measurement and optimization. This will come later, after some other things.
+
+
+<summary><h3>Previous updates</h3></summary>
+<details>
+
+
 (_10:44 Wednesday, May 27, 2026_)
 
 Subset sum accumulation is fully working now. Next for that is performance measurement and optimization. This will come later. Subset sum table below updated.
@@ -65,10 +87,6 @@ Current status of subset sums implementation:
 | nonnegative sets, non-unique values  |done       | yes    |
 | arbitrary values, unique values      |done       | yes    |
 | arbitrary values, non-unique values  |done       | yes    |
-
-
-<summary><h3>Previous updates</h3></summary>
-<details>
 
 (_16:22 Saturday, May 23, 2026_)
 
@@ -216,6 +234,57 @@ In table form, the implementation deduces the following:
 |17 |  1  | $\left\\{1, 4, 5, 7\right\\} = S$
 
 The result is returned as a histogram / table of <sum, count>, the first 2 columns from the table above.
+
+The following program produces the first 2 columns of the table above.
+```c++
+/*
+  Compiled with
+
+    g++ --std=c++23 -I. examples/subset-sums/example.cpp
+
+  from the ss repo root.
+ */
+#include "subsets/accumulate.h"
+#include <iostream>
+#include <algorithm>
+
+int main()
+{
+  auto map = ss::accumulate({1, 4, 5, 7});
+
+  std::vector<decltype(std::cbegin(map))> index(map.size());
+  std::ranges::for_each(index, [i = std::cbegin(map)] (auto& j) mutable { j = i++;});
+  std::ranges::sort(index, [](auto i, auto j) { return *i < *j; });
+  for(auto i : index)
+  {
+    std::cout << std::format("{:>3} : {:>3}", i->first, i->second) << std::endl;
+  }
+
+  return 0;
+}
+
+```
+
+It write this to stdout:
+```
+  0 :   1
+  1 :   1
+  4 :   1
+  5 :   2
+  6 :   1
+  7 :   1
+  8 :   1
+  9 :   1
+ 10 :   1
+ 11 :   1
+ 12 :   2
+ 13 :   1
+ 16 :   1
+ 17 :   1
+```
+
+This code is in [examples/subset-sums/example.cpp](examples/subset-sums/example.cpp)
+
 
 TODO 3:18 PM Sunday, November 09, 2025. Return only those counts for a sum in a specififed [min, max].
 
